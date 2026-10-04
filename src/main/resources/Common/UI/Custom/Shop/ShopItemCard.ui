@@ -1,0 +1,75 @@
+$C = "../Common.ui";
+Group {
+  Anchor: (Width: 146, Height: 185);
+  Padding: (Horizontal: 4, Vertical: 4);
+  Group #CardBorder {
+    Anchor: (Full: 0);
+    Background: #1a2530;
+    Padding: (Horizontal: 6, Vertical: 6);
+    LayoutMode: Top;
+    // Item Icon container
+    Group #IconContainer {
+      Anchor: (Height: 66);
+      LayoutMode: CenterMiddle;
+      Group #SlotBorder {
+        Anchor: (Width: 62, Height: 62);
+        Background: #121920;
+        Padding: 2;
+        ItemSlot #ItemIcon {
+          Anchor: (Full: 0);
+          ShowQualityBackground: true;
+        }
+        Label #ItemQuantity {
+          Anchor: (Right: 4, Bottom: 2);
+          Style: (
+            FontSize: 13,
+            TextColor: #ffffff,
+            HorizontalAlignment: End,
+            VerticalAlignment: End,
+            RenderBold: true,
+          );
+        }
+      }
+    }
+    // Item name
+        Label #ItemName {
+          Anchor: (Height: 22);
+          Padding: (Top: 2);
+          Style: (
+            FontSize: 13,
+            TextColor: #e0e8f0,
+            HorizontalAlignment: Center,
+            VerticalAlignment: Center,
+            RenderBold: true,
+          );
+          Text: "Item";
+        }
+        // Cost pill
+        Group #CostBorder {
+          Anchor: (Height: 22);
+          Background: #2a5a3a;
+          Padding: (Horizontal: 4);
+          LayoutMode: CenterMiddle;
+          Label #ItemCost {
+            Style: (
+              FontSize: 12,
+              TextColor: #ffffff,
+              HorizontalAlignment: Center,
+              VerticalAlignment: Center,
+              RenderBold: true,
+            );
+            Text: "10 Coins";
+          }
+        }
+        // Spacer
+        Group #Spacer {
+          FlexWeight: 1;
+        }
+           // Buy Button
+            $C.@TextButton #BuyButton {
+              Anchor: (Height: 32);
+              Padding: (Top: 2);
+              Text: "Buy";
+            }
+          }
+        }
