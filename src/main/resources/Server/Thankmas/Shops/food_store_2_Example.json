@@ -3,75 +3,30 @@
   "Items": [
     {
       "ItemId": "Food_Candy_Cane",
-      "Cost": 5
+      "Cost": 5,
+      "Description": "A hard, cane-shaped stick of candy that is traditionally flavored with peppermint and decorated with red and white spiral stripes"
     },
     {
       "ItemId": "Food_Bread",
-      "Cost": 15
+      "Cost": 15,
+      "Description": "A staple baked food made from a mixture of flour, water, and usually a leavening agent like yeast"
     },
     {
       "ItemId": "Food_Cheese",
-      "Cost": 20
+      "Cost": 20,
+      "Description": "Cheeeeeeeeeeeeeeeeeeeeeese"
+    }
+  ],
+  "ShopOpenVoicelLines": [
+    {
+      "SoundEventId": "shop_1",
+      "Subtitle": "Yo",
+      "DurationMs": 1000
     },
     {
-      "ItemId": "Food_Candy_Cane",
-      "Cost": 5
-    },
-    {
-      "ItemId": "Food_Bread",
-      "Cost": 15
-    },
-    {
-      "ItemId": "Food_Cheese",
-      "Cost": 20
-    },
-    {
-      "ItemId": "Food_Candy_Cane",
-      "Cost": 5
-    },
-    {
-      "ItemId": "Food_Bread",
-      "Cost": 15
-    },
-    {
-      "ItemId": "Food_Cheese",
-      "Cost": 20
-    },
-    {
-      "ItemId": "Food_Candy_Cane",
-      "Cost": 5
-    },
-    {
-      "ItemId": "Food_Bread",
-      "Cost": 15
-    },
-    {
-      "ItemId": "Food_Cheese",
-      "Cost": 20
-    },
-    {
-      "ItemId": "Food_Candy_Cane",
-      "Cost": 5
-    },
-    {
-      "ItemId": "Food_Bread",
-      "Cost": 15
-    },
-    {
-      "ItemId": "Food_Cheese",
-      "Cost": 20
-    },
-    {
-      "ItemId": "Food_Candy_Cane",
-      "Cost": 5
-    },
-    {
-      "ItemId": "Food_Bread",
-      "Cost": 15
-    },
-    {
-      "ItemId": "Food_Cheese",
-      "Cost": 20
+      "SoundEventId": "shop_2",
+      "Subtitle": "Who have we got on the line? Oh yeah, I don\u0027t have a line",
+      "DurationMs": 4000
     }
   ]
 }

@@ -1,0 +1,15 @@
+Group #ShopkeeperSubtitleContainer {
+  Anchor: (Bottom: 50, Width: 700, Height: 60);
+  Padding: (Horizontal: 16, Vertical: 10);
+  LayoutMode: CenterMiddle;
+
+  Label #ShopkeeperName {
+    Style: (FontSize: 22, TextColor: #f0c040, RenderBold: true);
+    Text: "[Shopkeeper]: ";
+  }
+
+  Label #ShopkeeperSubtitleText {
+    Style: (FontSize: 20, TextColor: #e0e8f0, Wrap: true);
+    Text: "";
+  }
+}

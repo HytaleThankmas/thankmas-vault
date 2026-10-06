@@ -15,7 +15,10 @@ class ShopItem(
     var quantity: Int = 1,
 
     @SerialName("DisplayName")
-    var displayName: String? = null
+    var displayName: String? = null,
+
+    @SerialName("Description")
+    var description: String? = null
 ) {
     companion object {
     }

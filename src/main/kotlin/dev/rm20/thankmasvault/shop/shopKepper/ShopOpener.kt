@@ -7,6 +7,7 @@ import com.hypixel.hytale.server.core.universe.PlayerRef
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
 import dev.rm20.thankmasvault.shop.ShopPage
 import dev.rm20.thankmasvault.shop.VaultShopAsset
+import dev.rm20.thankmasvault.shop.shopKepper.voiceline.voicelineInfo
 import dev.rm20.thankmasvault.utils.CameraUtil.setFixedCameraFromPoint
 
 object ShopOpener {
@@ -16,7 +17,8 @@ object ShopOpener {
         targetEntityRef: Ref<EntityStore>,
         store: Store<EntityStore>,
         vaultShopAsset: VaultShopAsset,
-        pointId: String? = null
+        pointId: String? = null,
+        voiceLine: voicelineInfo? = null
     ) {
         val ref = playerRef.reference ?: return
 
@@ -28,7 +30,7 @@ object ShopOpener {
         }
 
         // Open shop
-        val page = ShopPage(playerRef, vaultShopAsset)
+        val page = ShopPage(playerRef, vaultShopAsset,voiceLine)
         player.pageManager.openCustomPage(ref, store, page)
     }
 }
