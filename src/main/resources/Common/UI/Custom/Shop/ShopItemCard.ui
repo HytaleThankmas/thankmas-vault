@@ -1,31 +1,18 @@
 $C = "../Common.ui";
 Group {
-  Anchor: (Width: 120, Height: 160);
-  Padding: (Horizontal: 12, Vertical: 12);
+  Anchor: (Width: 300, Height: 90);
+  Padding: (Horizontal: 1, Vertical: 6);
   Group #CardBorder {
     Anchor: (Full: 0);
     Background: #14202c;
-    Padding: (Horizontal: 6, Vertical: 6);
-    LayoutMode: Top;
+    Padding: (Horizontal: 2, Vertical: 1);
+    LayoutMode: Left;
 
-    // Cost
-    Group #CostArea {
-      Anchor: (Height: 20);
-      LayoutMode: Left;
-      Label #ItemCost {
-        Style: (
-          FontSize: 14,
-          TextColor: #a0c8e0,
-          RenderBold: true,
-        );
-        Text: "10 Coins";
-      }
-    }
 
     // Item Icon container
     Group #IconContainer {
-      Anchor: (Height: 100);
-      LayoutMode: CenterMiddle;
+      Anchor: (Height: 100, Left:10);
+      LayoutMode: Left;
       Group #SlotBorder {
         ItemSlot #ItemIcon {
           Anchor: (Width: 64, Height: 64);
@@ -44,23 +31,36 @@ Group {
       }
     }
 
-    Group #Spacer {
-      FlexWeight: 1;
-    }
-
-    // Item name
-    Label #ItemName {
-      Anchor: (Height: 12);
-      Padding: (Top: 2);
-      Style: (
-        FontSize: 15,
-        TextColor: #e0e8f0,
-        HorizontalAlignment: Center,
-        VerticalAlignment: Center,
-        RenderBold: true,
-      );
-      Text: "Item";
+    Group #ItemDetils {
+      Anchor: (Height: 30);
+      Padding: (Left: 10);
+      LayoutMode: Top;
+      // Item name
+      Label #ItemName {
+        Padding: (Top: 2);
+        Style: (
+          FontSize: 15,
+          TextColor: #e0e8f0,
+          HorizontalAlignment: Center,
+          VerticalAlignment: Center,
+          RenderBold: true,
+        );
+        Text: "Item";
       }
+
+      // Cost
+      Group #CostArea {
+        LayoutMode: Left;
+        Label #ItemCost {
+          Style: (
+            FontSize: 13,
+            TextColor: #a0c8e0,
+            RenderBold: true,
+          );
+          Text: "10 Coins";
+        }
+      }
+    }
   }
   // Buy Button
   Button #BuyButton {
