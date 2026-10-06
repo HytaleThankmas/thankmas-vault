@@ -1,6 +1,6 @@
 plugins {
     id("gg.ginco.hygradle")
-    //id("com.google.devtools.ksp") version "2.3.6"
+    id("com.google.devtools.ksp") version "2.3.6"
     kotlin("jvm") version "2.3.21"
 }
 
@@ -28,8 +28,8 @@ repositories {
 }
 
 dependencies {
-//    implementation("gg.ginco:hytale-codec-annotations:1.1.0")
-//    implementation("gg.ginco:hytale-codec-runtime:1.1.0")
-//    ksp("gg.ginco:hytale-codec-processor:1.1.0")
-    implementation("com.github.rm20killer:CodecAnnotation:ac9cf6574a")
+    implementation("gg.ginco:hytale-codec-annotations:1.1.0")
+    implementation("gg.ginco:hytale-codec-runtime:1.1.0")
+    ksp("gg.ginco:hytale-codec-processor:1.1.0")
+    // implementation("com.github.rm20killer:CodecAnnotation:ac9cf6574a")
 }

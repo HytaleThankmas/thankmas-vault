@@ -1,19 +1,20 @@
 package dev.rm20.thankmasvault.economy
 
-import com.hypixel.hytale.codec.builder.BuilderCodec
 import com.hypixel.hytale.component.Component
 import com.hypixel.hytale.component.ComponentType
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
-import dev.rm20.codecannotation.Annotations.CodecAnnotations
-import dev.rm20.codecannotation.AutoCodecBuilder
+import gg.ginco.jellyparty.codec.annotations.SerialIgnore
+import gg.ginco.jellyparty.codec.annotations.SerialName
+import gg.ginco.jellyparty.codec.annotations.SerializableObject
 import java.util.concurrent.atomic.AtomicBoolean
 
+@SerializableObject
 class WalletComponent(initialBalance: Int = 0) : Component<EntityStore> {
 
-    @field:CodecAnnotations.Field("Balance")
+    @SerialName("Balance")
     var balance: Int = initialBalance
-        private set
 
+    @SerialIgnore
     val isDirty: AtomicBoolean = AtomicBoolean(false)
 
     fun addCoins(amount: Int): Boolean {
@@ -46,10 +47,5 @@ class WalletComponent(initialBalance: Int = 0) : Component<EntityStore> {
     companion object {
         @JvmStatic
         lateinit var componentType: ComponentType<EntityStore, WalletComponent>
-
-        @JvmField
-        val CODEC: BuilderCodec<WalletComponent> = AutoCodecBuilder.create(
-            WalletComponent::class.java
-        ) { WalletComponent() }
     }
 }

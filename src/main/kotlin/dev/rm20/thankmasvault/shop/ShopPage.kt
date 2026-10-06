@@ -26,7 +26,7 @@ import javax.annotation.Nonnull
 // TODO: Make the ui similar to warframe's shop so npc on the right with shop on the left
 
 class ShopPage(
-    playerRef: PlayerRef, val shopAsset: ShopAsset
+    playerRef: PlayerRef, val vaultShopAsset: VaultShopAsset
 ) : InteractiveCustomUIPage<ShopPage.ShopEventData>(
     playerRef, CustomPageLifetime.CanDismissOrCloseThroughInteraction, ShopEventData.CODEC
 ) {
@@ -37,12 +37,12 @@ class ShopPage(
         @Nonnull store: Store<EntityStore>
     ) {
         commandBuilder.append("Shop/ShopPage.ui")
-        val title = shopAsset.getDisplayName()
+        val title = vaultShopAsset.getDisplayName()
         commandBuilder.set("#ShopTitle.Text", title)
         val balance = EconomyAPI.getBalance(ref, store)
         commandBuilder.set("#PlayerBalance.Text", "$balance Coins")
         commandBuilder.clear("#ItemsGrid")
-        val items = shopAsset.items
+        val items = vaultShopAsset.items
         for (i in items.indices) {
             val item = items[i]
             val selector = "#ItemsGrid[$i]"
@@ -71,8 +71,8 @@ class ShopPage(
     ) {
 
         val index = data.itemIndex
-        if (index < 0 || index >= shopAsset.items.size) return
-        val item = shopAsset.items[index]
+        if (index < 0 || index >= vaultShopAsset.items.size) return
+        val item = vaultShopAsset.items[index]
         val playerEntityRef = playerRef.reference ?: return
         val balance = EconomyAPI.getBalance(ref, store)
         if (balance < item.cost) {

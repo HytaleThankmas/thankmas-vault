@@ -13,7 +13,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
 import com.hypixel.hytale.server.npc.entities.NPCEntity
 import com.hypixel.hytale.server.npc.util.IAnnotatedComponent
 import com.hypixel.hytale.server.npc.util.IAnnotatedComponentCollection
-import dev.rm20.thankmasvault.shop.ShopAsset
+import dev.rm20.thankmasvault.shop.VaultShopAsset
 import dev.rm20.thankmasvault.shop.shopKepper.ActionOpenShop
 import dev.rm20.thankmasvault.shop.shopKepper.ShopComponent
 import javax.annotation.Nonnull
@@ -34,9 +34,9 @@ class AttachShopCommand : AbstractWorldCommand("attachshop", "Attaches a shop to
     ) {
         val shopId = shopIdArg.get(context)
         val pointId = if (pointIdArg.provided(context)) pointIdArg.get(context) else null
-        val shopAsset = ShopAsset.getById(shopId)
+        val vaultShopAsset = VaultShopAsset.getById(shopId)
 
-        if (shopAsset == null) {
+        if (vaultShopAsset == null) {
             context.sendMessage(
                 Message.raw("Shop '$shopId' not found")
             )

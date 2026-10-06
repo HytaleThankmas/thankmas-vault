@@ -5,8 +5,8 @@ import com.hypixel.hytale.component.Store
 import com.hypixel.hytale.server.core.entity.entities.Player
 import com.hypixel.hytale.server.core.universe.PlayerRef
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
-import dev.rm20.thankmasvault.shop.ShopAsset
 import dev.rm20.thankmasvault.shop.ShopPage
+import dev.rm20.thankmasvault.shop.VaultShopAsset
 import dev.rm20.thankmasvault.utils.CameraUtil.setFixedCameraFromPoint
 
 object ShopOpener {
@@ -15,7 +15,7 @@ object ShopOpener {
         playerRef: PlayerRef,
         targetEntityRef: Ref<EntityStore>,
         store: Store<EntityStore>,
-        shopAsset: ShopAsset,
+        vaultShopAsset: VaultShopAsset,
         pointId: String? = null
     ) {
         val ref = playerRef.reference ?: return
@@ -28,7 +28,7 @@ object ShopOpener {
         }
 
         // Open shop
-        val page = ShopPage(playerRef, shopAsset)
+        val page = ShopPage(playerRef, vaultShopAsset)
         player.pageManager.openCustomPage(ref, store, page)
     }
 }

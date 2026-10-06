@@ -10,7 +10,7 @@ import com.hypixel.hytale.server.core.entity.entities.Player
 import com.hypixel.hytale.server.core.universe.PlayerRef
 import com.hypixel.hytale.server.core.universe.world.World
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
-import dev.rm20.thankmasvault.shop.ShopAsset
+import dev.rm20.thankmasvault.shop.VaultShopAsset
 import dev.rm20.thankmasvault.shop.ShopPage
 import javax.annotation.Nonnull
 
@@ -31,7 +31,7 @@ class ShopCommand : AbstractPlayerCommand("shop", "Open a shop interface") {
             return
         }
 
-        val availableShops = ShopAsset.getAssetMap().assetMap.keys
+        val availableShops = VaultShopAsset.getAssetMap().assetMap.keys
         if (availableShops.isEmpty()) {
             context.sendMessage(Message.raw("No shops available."))
             return
@@ -50,15 +50,15 @@ class ShopCommand : AbstractPlayerCommand("shop", "Open a shop interface") {
             }
         }
 
-        val shopAsset = ShopAsset.getById(shopId)
-        if (shopAsset == null) {
+        val vaultShopAsset = VaultShopAsset.getById(shopId)
+        if (vaultShopAsset == null) {
             context.sendMessage(
                 Message.raw("'$shopId' not found")
             )
             return
         }
 
-        val page = ShopPage(playerRef, shopAsset)
+        val page = ShopPage(playerRef, vaultShopAsset)
         player.pageManager.openCustomPage(ref, store, page)
     }
 }

@@ -4,8 +4,9 @@ import com.hypixel.hytale.codec.builder.BuilderCodec
 import com.hypixel.hytale.component.Component
 import com.hypixel.hytale.component.ComponentType
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
-import dev.rm20.codecannotation.AutoCodecBuilder
+import gg.ginco.jellyparty.codec.annotations.SerializableObject
 
+@SerializableObject
 class ShopComponent : Component<EntityStore> {
     var shopId: String = ""
     var pointId: String = ""
@@ -15,7 +16,7 @@ class ShopComponent : Component<EntityStore> {
         val copy = ShopComponent()
         copy.shopId = this.shopId
         copy.pointId = this.pointId
-        return copy;
+        return copy
     }
 
     companion object {
@@ -23,8 +24,6 @@ class ShopComponent : Component<EntityStore> {
         lateinit var componentType: ComponentType<EntityStore, ShopComponent>
 
         @JvmField
-        val CODEC: BuilderCodec<ShopComponent> = AutoCodecBuilder.create(
-            ShopComponent::class.java
-        ) { ShopComponent() }
+        val CODEC: BuilderCodec<ShopComponent> = ShopComponentCodec
     }
 }

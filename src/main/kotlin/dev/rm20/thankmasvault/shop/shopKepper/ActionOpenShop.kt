@@ -8,7 +8,7 @@ import com.hypixel.hytale.server.npc.asset.builder.BuilderSupport
 import com.hypixel.hytale.server.npc.corecomponents.ActionBase
 import com.hypixel.hytale.server.npc.instructions.ExecutionSupport
 import com.hypixel.hytale.server.npc.sensorinfo.InfoProvider
-import dev.rm20.thankmasvault.shop.ShopAsset
+import dev.rm20.thankmasvault.shop.VaultShopAsset
 import javax.annotation.Nonnull
 import javax.annotation.Nullable
 
@@ -25,11 +25,7 @@ class ActionOpenShop(
         @Nonnull store: Store<EntityStore>
     ): Boolean {
         return super.canExecute(
-            ref,
-            executionSupport,
-            sensorInfo,
-            dt,
-            store
+            ref, executionSupport, sensorInfo, dt, store
         ) && executionSupport.stateSupport.interactionIterationTarget != null
     }
 
@@ -49,9 +45,9 @@ class ActionOpenShop(
         val shopComponent = store.getComponent(ref, ShopComponent.componentType) ?: return false
 
         if (shopComponent.shopId.isEmpty()) return false
-        val shopAsset = ShopAsset.getById(shopComponent.shopId) ?: return false
+        val vaultShopAsset = VaultShopAsset.getById(shopComponent.shopId) ?: return false
 
-        ShopOpener.openShop(playerRef, targetRef, store, shopAsset, shopComponent.pointId)
+        ShopOpener.openShop(playerRef, targetRef, store, vaultShopAsset, shopComponent.pointId)
         return true
     }
 }
