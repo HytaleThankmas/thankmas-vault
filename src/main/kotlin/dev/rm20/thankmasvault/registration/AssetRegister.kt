@@ -17,5 +17,7 @@ object AssetRegister {
                 .loadsAfter(Item::class.java)
                 .build()
         )
+
+
     }
 }

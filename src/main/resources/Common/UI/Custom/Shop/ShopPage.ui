@@ -1,66 +1,60 @@
 $C = "../Common.ui";
 
-$C.@PageOverlay {}
-
-$C.@DecoratedContainer {
-  Anchor: (Width: 660, Height: 500);
-
-  #Title {
-    Label #ShopTitle {
-      Style: (
-        ...$C.@TitleStyle,
-        HorizontalAlignment: Center
-      );
-      Padding: (Horizontal: 19);
-      Text: "Shop";
-    }
-  }
-
-  #Content {
-    LayoutMode: Top;
-    Padding: (Horizontal: 15, Vertical: 3);
-
-    Group #HeaderInfo {
-      LayoutMode: Left;
-      Anchor: (Height: 20);
-      Padding: (Left: 8, Right: 8, Bottom: 4);
-
-      Label #BalanceTitle {
-        Style: (
-          FontSize: 15,
-          TextColor: #8a9aaa,
-        );
-        Text: "Your Balance: ";
-      }
-
-      Label #PlayerBalance {
-        Style: (
-          FontSize: 16,
-          TextColor: #f0c040,
-          RenderBold: true,
-        );
-        Text: "0 Coins";
-      }
-    }
-
-    Group #Divider {
-      Anchor: (Height: 2);
-      Background: #19252F;
-      Padding: (Bottom: 6);
-    }
-
-    // Items grid container with scrolling
-    Group #ItemsGridContainer {
-      FlexWeight: 1;
-      LayoutMode: TopScrolling;
-      ScrollbarStyle: $C.@DefaultScrollbarStyle;
-      Padding: (Top: 6, Left: 6, Right: 6, Bottom: 6);
-
-      Group #ItemsGrid {
-        LayoutMode: LeftCenterWrap;
-      }
-    }
-  }
+$C.@PageOverlay {
+  Anchor: (Width: 980, Left: 0);
 }
 
-$C.@BackButton {}
+$C.@DecoratedContainer {
+    Anchor: (Width: 800, Left: 40);
+    Padding: (Top: 60, Bottom: 40);
+
+    #Title {
+        Label #ShopTitle {
+            Style: (...$C.@TitleStyle, HorizontalAlignment: Center);
+            Padding: (Horizontal: 19);
+            Text: "Shop";
+        }
+    }
+
+    #Content {
+        LayoutMode: Top;
+        Padding: (Horizontal: 15, Vertical: 3);
+
+        Group #HeaderInfo {
+            LayoutMode: Left;
+            Anchor: (Height: 20);
+            Padding: (Left: 8, Right: 8, Bottom: 4);
+
+            Label #BalanceTitle {
+                Style: (FontSize: 15, TextColor: #8a9aaa);
+                Text: "Your Balance: ";
+            }
+
+            Label #PlayerBalance {
+                Style: (FontSize: 16, TextColor: #f0c040, RenderBold: true);
+                Text: "0 Coins";
+            }
+        }
+
+        Group #Divider {
+            Anchor: (Height: 2);
+            Background: #19252F;
+            Padding: (Bottom: 6);
+        }
+
+        // Items grid container with scrolling
+        Group #ItemsGridContainer {
+            FlexWeight: 1;
+            ScrollbarStyle: $C.@DefaultScrollbarStyle;
+            Padding: (Top: 6, Left: 3, Right: 3, Bottom: 6);
+            LayoutMode: TopScrolling;
+
+            Group #ItemsGrid {
+                LayoutMode: LeftCenterWrap;
+            }
+        }
+    }
+}
+
+$C.@BackButton {
+}

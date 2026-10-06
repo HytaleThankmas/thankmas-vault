@@ -1,9 +1,7 @@
 package dev.rm20.thankmasvault.registration
 
 import dev.rm20.thankmasvault.ThankmasVault
-import dev.rm20.thankmasvault.commands.AdminEconomyCommand
-import dev.rm20.thankmasvault.commands.BalanceCommand
-import dev.rm20.thankmasvault.commands.ShopCommand
+import dev.rm20.thankmasvault.commands.*
 
 object CommandRegister {
 
@@ -12,5 +10,7 @@ object CommandRegister {
         commandRegistry.registerCommand(BalanceCommand())
         commandRegistry.registerCommand(AdminEconomyCommand())
         commandRegistry.registerCommand(ShopCommand())
+        commandRegistry.registerCommand(AttachShopCommand())
+        commandRegistry.registerCommand(RemoveShopCommand())
     }
 }

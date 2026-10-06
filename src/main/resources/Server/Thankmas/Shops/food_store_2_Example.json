@@ -1,0 +1,77 @@
+{
+  "Title": "Holiday Food Store",
+  "Items": [
+    {
+      "ItemId": "Food_Candy_Cane",
+      "Cost": 5
+    },
+    {
+      "ItemId": "Food_Bread",
+      "Cost": 15
+    },
+    {
+      "ItemId": "Food_Cheese",
+      "Cost": 20
+    },
+    {
+      "ItemId": "Food_Candy_Cane",
+      "Cost": 5
+    },
+    {
+      "ItemId": "Food_Bread",
+      "Cost": 15
+    },
+    {
+      "ItemId": "Food_Cheese",
+      "Cost": 20
+    },
+    {
+      "ItemId": "Food_Candy_Cane",
+      "Cost": 5
+    },
+    {
+      "ItemId": "Food_Bread",
+      "Cost": 15
+    },
+    {
+      "ItemId": "Food_Cheese",
+      "Cost": 20
+    },
+    {
+      "ItemId": "Food_Candy_Cane",
+      "Cost": 5
+    },
+    {
+      "ItemId": "Food_Bread",
+      "Cost": 15
+    },
+    {
+      "ItemId": "Food_Cheese",
+      "Cost": 20
+    },
+    {
+      "ItemId": "Food_Candy_Cane",
+      "Cost": 5
+    },
+    {
+      "ItemId": "Food_Bread",
+      "Cost": 15
+    },
+    {
+      "ItemId": "Food_Cheese",
+      "Cost": 20
+    },
+    {
+      "ItemId": "Food_Candy_Cane",
+      "Cost": 5
+    },
+    {
+      "ItemId": "Food_Bread",
+      "Cost": 15
+    },
+    {
+      "ItemId": "Food_Cheese",
+      "Cost": 20
+    }
+  ]
+}

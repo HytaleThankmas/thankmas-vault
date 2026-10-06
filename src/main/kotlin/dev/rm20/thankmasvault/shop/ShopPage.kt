@@ -20,6 +20,7 @@ import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder
 import com.hypixel.hytale.server.core.universe.PlayerRef
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
 import dev.rm20.thankmasvault.economy.EconomyAPI
+import dev.rm20.thankmasvault.utils.CameraUtil
 import javax.annotation.Nonnull
 
 // TODO: Make the ui similar to warframe's shop so npc on the right with shop on the left
@@ -54,7 +55,7 @@ class ShopPage(
             commandBuilder.set("$selector #ItemCost.Text", "${item.cost} Coins")
             val canAfford = balance >= item.cost
             commandBuilder.set("$selector #BuyButton.Disabled", !canAfford)
-            commandBuilder.set("$selector #CostBorder.Background", if (canAfford) "#2a5a3a" else "#5a2a2a")
+            //commandBuilder.set("$selector HoveredBackground", if (canAfford) "#2a5a3a" else "#5a2a2a")
 
             eventBuilder.addEventBinding(
                 CustomUIEventBindingType.Activating,
@@ -133,5 +134,12 @@ class ShopPage(
                     data.itemIndex = s?.toIntOrNull() ?: -1
                 }, { data -> data.itemIndex.toString() }).add().build()
         }
+    }
+
+
+    override fun onDismiss(ref: Ref<EntityStore>, store: Store<EntityStore>) {
+        super.onDismiss(ref, store)
+        // Resets camera back
+        CameraUtil.resetCamera(playerRef)
     }
 }

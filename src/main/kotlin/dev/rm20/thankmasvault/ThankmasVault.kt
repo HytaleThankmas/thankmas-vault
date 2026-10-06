@@ -3,9 +3,11 @@ package dev.rm20.thankmasvault
 import com.hypixel.hytale.logger.HytaleLogger
 import com.hypixel.hytale.server.core.plugin.JavaPlugin
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit
+import com.hypixel.hytale.server.npc.NPCPlugin
 import dev.rm20.thankmasvault.registration.AssetRegister
 import dev.rm20.thankmasvault.registration.CommandRegister
 import dev.rm20.thankmasvault.registration.ComponentRegister
+import dev.rm20.thankmasvault.shop.shopKepper.BuilderActionOpenShop
 import java.util.logging.Level
 
 class ThankmasVault(init: JavaPluginInit) : JavaPlugin(init) {
@@ -21,6 +23,8 @@ class ThankmasVault(init: JavaPluginInit) : JavaPlugin(init) {
         AssetRegister.registerAssets(this)
         CommandRegister.registerCommands(this)
         ComponentRegister.registerComponents(this)
+
+        NPCPlugin.get().registerCoreComponentType("OpenVaultShop") { BuilderActionOpenShop() }
     }
 
     override fun shutdown() {
