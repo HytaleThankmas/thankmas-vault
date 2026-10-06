@@ -28,8 +28,8 @@ repositories {
 }
 
 dependencies {
-    implementation("gg.ginco:hytale-codec-annotations:1.1.0")
-    implementation("gg.ginco:hytale-codec-runtime:1.1.0")
-    ksp("gg.ginco:hytale-codec-processor:1.1.0")
+    implementation("gg.ginco:hytale-codec-annotations:1.2.1")
+    implementation("gg.ginco:hytale-codec-runtime:1.2.1")
+    ksp("gg.ginco:hytale-codec-processor:1.2.1")
     // implementation("com.github.rm20killer:CodecAnnotation:ac9cf6574a")
 }
