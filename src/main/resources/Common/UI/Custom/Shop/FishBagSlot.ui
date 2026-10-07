@@ -1,0 +1,35 @@
+$C = "../Common.ui";
+
+Group {
+  Anchor: (Width: 68, Height: 68);
+  Padding: (Horizontal: 4, Vertical: 4);
+  TooltipText: "";
+
+  Group #SlotBorder {
+    Anchor: (Full: 0);
+    Background: #1a2530;
+    Padding: (Horizontal: 4, Vertical: 4);
+
+    ItemSlot #FishIcon {
+      Anchor: (Full: 0);
+      ShowQualityBackground: true;
+    }
+  }
+
+  Label #FishQuantity {
+    Anchor: (Right: 6, Bottom: 4);
+    Style: (
+      FontSize: 14,
+      TextColor: #ffffff,
+      HorizontalAlignment: End,
+      VerticalAlignment: End,
+      RenderBold: true
+    );
+  }
+
+  Group #HoverCatcher {
+      Anchor: (Full: 0);
+      Background: #000000(0.0);
+      TooltipText: "";
+    }
+}

@@ -1,0 +1,49 @@
+$C = "../Common.ui";
+
+$C.@PageOverlay {
+  Anchor: (Width: 980, Left: 0);
+}
+
+$C.@DecoratedContainer {
+  Anchor: (Width: 800, Left: 40);
+  Padding: (Top: 25, Bottom: 90);
+
+  #Title {
+    Label #ShopTitle {
+      Style: (...$C.@TitleStyle, HorizontalAlignment: Center);
+      Padding: (Horizontal: 19);
+      Text: "Fish Market";
+    }
+  }
+
+  #Content {
+    LayoutMode: Top;
+    Padding: (Horizontal: 15, Vertical: 3);
+
+    Group #FishGridContainer {
+      FlexWeight: 1;
+      LayoutMode: TopScrolling;
+      ScrollbarStyle: $C.@DefaultScrollbarStyle;
+      Padding: (Top: 10, Left: 8, Right: 8);
+
+      Group #FishGrid {
+        LayoutMode: LeftCenterWrap;
+      }
+    }
+
+
+    Group #Footer {
+
+      Anchor: (Height: 60);
+      LayoutMode: CenterMiddle;
+      Padding: (Bottom: 8, Top: 8);
+
+      $C.@TextButton #SellAllButton {
+        Anchor: (Width: 180, Height: 40);
+        Text: "Sell All Fish";
+      }
+    }
+  }
+}
+
+$C.@BackButton {}

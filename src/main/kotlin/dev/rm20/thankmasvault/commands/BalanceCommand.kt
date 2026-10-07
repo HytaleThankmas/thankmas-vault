@@ -5,6 +5,7 @@ import com.hypixel.hytale.component.Store
 import com.hypixel.hytale.server.core.Message
 import com.hypixel.hytale.server.core.command.system.CommandContext
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayerCommand
+import com.hypixel.hytale.server.core.permissions.provider.HytalePermissionsProvider
 import com.hypixel.hytale.server.core.universe.PlayerRef
 import com.hypixel.hytale.server.core.universe.world.World
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
@@ -14,6 +15,7 @@ import javax.annotation.Nonnull
 class BalanceCommand : AbstractPlayerCommand("balance", "Check your current coin balance") {
     init {
         addAliases("bal", "coins")
+        requireNoPermission()
     }
     override fun execute(
         @Nonnull context: CommandContext,
