@@ -1,4 +1,4 @@
-package dev.rm20.thankmasvault.shop
+package dev.rm20.thankmasvault.npc.shop
 
 import com.hypixel.hytale.codec.Codec
 import com.hypixel.hytale.codec.KeyedCodec
@@ -21,9 +21,10 @@ import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder
 import com.hypixel.hytale.server.core.universe.PlayerRef
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
+import dev.rm20.thankmasvault.assets.VaultShopAsset
 import dev.rm20.thankmasvault.economy.EconomyAPI
-import dev.rm20.thankmasvault.shop.shopKepper.ActionOpenShop
-import dev.rm20.thankmasvault.shop.shopKepper.voiceline.voicelineInfo
+import dev.rm20.thankmasvault.npc.VaultNpcComponent
+import dev.rm20.thankmasvault.npc.shop.shopKepper.voiceline.voicelineInfo
 import dev.rm20.thankmasvault.utils.CameraUtil
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
@@ -50,9 +51,14 @@ class ShopPage(
         commandBuilder.append("Shop/ShopPage.ui")
 
         if (voiceLine != null && !isDismissed) {
-            commandBuilder.append("#Subtitle","Shop/ShopSubtitle.ui")
+            commandBuilder.append("#Subtitle", "Shop/ShopSubtitle.ui")
 
-            // TODO: allow for custom names on the NPC
+            val name = store.getComponent(ref, VaultNpcComponent.componentType)?.displayName
+
+            if (name.isNullOrBlank())
+            {
+                commandBuilder.set("#ShopkeeperName.Text", "[${name}]: ")
+            }
 
             commandBuilder.set("#ShopkeeperSubtitleText.Text", "\"${voiceLine.subtitle}\"")
             if (!hasScheduledSubtitleHide) {

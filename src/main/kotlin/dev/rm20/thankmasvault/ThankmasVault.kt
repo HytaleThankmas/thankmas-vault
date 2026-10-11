@@ -6,8 +6,10 @@ import com.hypixel.hytale.server.core.plugin.JavaPluginInit
 import com.hypixel.hytale.server.npc.NPCPlugin
 import dev.rm20.thankmasvault.registration.CommandRegister
 import dev.rm20.thankmasvault.registration.ComponentRegister
-import dev.rm20.thankmasvault.shop.registerAssets
-import dev.rm20.thankmasvault.shop.shopKepper.BuilderActionOpenShop
+import dev.rm20.thankmasvault.assets.registerAssets
+import dev.rm20.thankmasvault.npc.shop.shopKepper.BuilderActionOpenShop
+import dev.rm20.thankmasvault.registration.DialogueActionsRegister
+import dev.rm20.thankmasvault.registration.NpcActionRegister
 import java.util.logging.Level
 
 class ThankmasVault(init: JavaPluginInit) : JavaPlugin(init) {
@@ -23,8 +25,9 @@ class ThankmasVault(init: JavaPluginInit) : JavaPlugin(init) {
         registerAssets()
         CommandRegister.registerCommands(this)
         ComponentRegister.registerComponents(this)
+        NpcActionRegister.registerNpcActions(this)
 
-        NPCPlugin.get().registerCoreComponentType("OpenVaultShop") { BuilderActionOpenShop() }
+        DialogueActionsRegister.registerDialogueActions();
     }
 
     override fun shutdown() {

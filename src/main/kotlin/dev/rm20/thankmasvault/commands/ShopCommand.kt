@@ -10,10 +10,9 @@ import com.hypixel.hytale.server.core.entity.entities.Player
 import com.hypixel.hytale.server.core.universe.PlayerRef
 import com.hypixel.hytale.server.core.universe.world.World
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
-import dev.rm20.thankmasvault.shop.ShopPage
-import dev.rm20.thankmasvault.shop.VaultShopAsset
-import dev.rm20.thankmasvault.shop.fishing.FishBagUIHandler
-import dev.rm20.thankmasvault.shop.fishing.FishBagUIHandler.openFishMarket
+import dev.rm20.thankmasvault.npc.shop.ShopPage
+import dev.rm20.thankmasvault.assets.VaultShopAsset
+import dev.rm20.thankmasvault.npc.shop.fishing.FishBagUIHandler.openFishMarket
 import javax.annotation.Nonnull
 
 // TODO: remove this and use NPC
@@ -28,10 +27,7 @@ class ShopCommand : AbstractPlayerCommand("shop", "Open a shop interface") {
         @Nonnull playerRef: PlayerRef,
         @Nonnull world: World
     ) {
-        val player = store.getComponent(ref, Player.getComponentType())
-        if (player == null) {
-            return
-        }
+        val player = store.getComponent(ref, Player.getComponentType()) ?: return
 
         val availableShops = VaultShopAsset.getAssetMap().assetMap.keys
         if (availableShops.isEmpty()) {
@@ -53,7 +49,7 @@ class ShopCommand : AbstractPlayerCommand("shop", "Open a shop interface") {
         }
         if(shopId == "fish")
         {
-            openFishMarket(player)
+            openFishMarket(player, null)
             return
         }
 

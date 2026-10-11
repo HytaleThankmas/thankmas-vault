@@ -1,0 +1,28 @@
+$C = "../Common.ui";
+
+Group {
+  Anchor: (Width: 800, Height: 50);
+  Padding: (Horizontal: 1, Vertical: 2);
+
+  Group #CardBorder {
+    Anchor: (Full: 0);
+    Background: #6e777d(0.3);
+    Padding: (Horizontal: 12, Vertical: 6);
+    LayoutMode: Left;
+
+    Label #ChoiceText {
+      Padding: (Left: 4);
+      Style: (
+        FontSize: 18,
+        TextColor: #eceef6,
+        VerticalAlignment: Center,
+        RenderBold: true
+      );
+      Text: "Dialogue Choice";
+    }
+  }
+
+  Button #ChoiceButton {
+    Anchor: (Full: 0);
+  }
+}

@@ -1,4 +1,4 @@
-package dev.rm20.thankmasvault.shop
+package dev.rm20.thankmasvault.npc.shop
 
 import gg.ginco.jellyparty.codec.annotations.SerialName
 import gg.ginco.jellyparty.codec.annotations.SerializableObject

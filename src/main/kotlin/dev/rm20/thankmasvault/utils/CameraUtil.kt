@@ -1,11 +1,18 @@
 package dev.rm20.thankmasvault.utils
 
+import com.hypixel.hytale.component.Ref
 import com.hypixel.hytale.math.vector.Rotation3f
 import com.hypixel.hytale.protocol.*
 import com.hypixel.hytale.protocol.packets.camera.SetServerCamera
+import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent
 import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport
 import com.hypixel.hytale.server.core.universe.PlayerRef
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
 import org.joml.Vector3d
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 
 object CameraUtil {

@@ -1,4 +1,4 @@
-package dev.rm20.thankmasvault.shop.fishing
+package dev.rm20.thankmasvault.npc.shop.fishing
 
 import com.hypixel.hytale.protocol.packets.interface_.NotificationStyle
 import com.hypixel.hytale.server.core.Message
@@ -10,6 +10,7 @@ import com.hypixel.hytale.server.core.util.NotificationUtil
 import dev.rm20.anglersalmanac.AnglersAlmanac
 import dev.rm20.anglersalmanac.Inventory.FishBagComponent
 import dev.rm20.anglersalmanac.Models.FishLootManager
+import dev.rm20.thankmasvault.economy.EconomyAPI
 import java.awt.Color
 import java.util.*
 import kotlin.math.max
@@ -35,17 +36,14 @@ object FishMarket {
                 fishSold += stack.getQuantity()
             }
         }
-
-        if (AnglersAlmanac.getInstance().ECONOMY_HOOK != null && AnglersAlmanac.getInstance().ECONOMY_HOOK.enabled) {
-            AnglersAlmanac.getInstance().ECONOMY_HOOK.ensureWallet(player.getReference(), accessor, 0)
-            if (!AnglersAlmanac.getInstance().ECONOMY_HOOK.deposit(player.getReference(), accessor, totalEarned)) {
-                AnglersAlmanac.LOGGER.atWarning().log("Failed to deposit coins")
-                return
-            }
-        } else {
-            AnglersAlmanac.LOGGER.atWarning().log("Economy plugin not available to deposit coins.")
+        if(player.reference == null)
+        {
             return
         }
+
+        EconomyAPI.ensureWallet(player.reference!!, accessor, 0)
+        EconomyAPI.deposit(player.reference!!, accessor, totalEarned)
+
         if (commandContext == null) {
             if (fishSold > 0) {
                 val playerRef = player.getReference() ?: return
@@ -76,34 +74,36 @@ object FishMarket {
 
     fun getFishValue(itemStack: ItemStack, qty: Int = 1): Int {
         val fishData: FishLootManager = FishLootManager.getInternalFishData(itemStack.getItemId()) ?: return 0
+        return (fishData.sellPrice * qty)
+
 
         // TODO: move to pre determined amount (need to add field to AA)
-        val clampedDiff = min(fishData.getMinigameStats().difficulty.toDouble(), 8.0)
-        val clampedStam = min(fishData.getMinigameStats().stamina.toDouble(), 200.0)
-
-        val normDiff = (clampedDiff / 8.0) * 100.0
-        val normStam = (clampedStam / 200.0) * 100.0
-        val combinedStats = (normDiff + normStam) / 2.0
-
-        val weightModifier: Double
-        if (fishData.getWeight() > 10.0) {
-            weightModifier = max(1.0 - (fishData.getWeight() / 500.0), 0.7)
-        } else {
-            weightModifier = max(1.0 - ((10.0 - fishData.getWeight()) / 20.0), 0.85)
-        }
-
-        val rarity = fishData.getRarity().lowercase(Locale.getDefault())
-
-        val rarityMultiplier = when (rarity) {
-            "junk" -> 0.5
-            "common" -> 1.0
-            "uncommon" -> 1.1
-            "rare" -> 1.2
-            "epic" -> 1.3
-            "legendary" -> 1.5
-            else -> 1.0
-        }
-        AnglersAlmanac.LOGGER.atInfo().log((combinedStats * weightModifier * rarityMultiplier * qty).toString())
-        return (combinedStats * weightModifier * rarityMultiplier * qty).roundToInt()
+//        val clampedDiff = min(fishData.getMinigameStats().difficulty.toDouble(), 8.0)
+//        val clampedStam = min(fishData.getMinigameStats().stamina.toDouble(), 200.0)
+//
+//        val normDiff = (clampedDiff / 8.0) * 100.0
+//        val normStam = (clampedStam / 200.0) * 100.0
+//        val combinedStats = (normDiff + normStam) / 2.0
+//
+//        val weightModifier: Double
+//        if (fishData.getWeight() > 10.0) {
+//            weightModifier = max(1.0 - (fishData.getWeight() / 500.0), 0.7)
+//        } else {
+//            weightModifier = max(1.0 - ((10.0 - fishData.getWeight()) / 20.0), 0.85)
+//        }
+//
+//        val rarity = fishData.getRarity().lowercase(Locale.getDefault())
+//
+//        val rarityMultiplier = when (rarity) {
+//            "junk" -> 0.5
+//            "common" -> 1.0
+//            "uncommon" -> 1.1
+//            "rare" -> 1.2
+//            "epic" -> 1.3
+//            "legendary" -> 1.5
+//            else -> 1.0
+//        }
+//        //AnglersAlmanac.LOGGER.atInfo().log((combinedStats * weightModifier * rarityMultiplier * qty).toString())
+//        return (combinedStats * weightModifier * rarityMultiplier * qty).roundToInt()
     }
 }

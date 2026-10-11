@@ -1,4 +1,4 @@
-package dev.rm20.thankmasvault.shop.shopKepper
+package dev.rm20.thankmasvault.npc.shop.shopKepper
 
 import com.google.gson.JsonElement
 import com.hypixel.hytale.server.npc.asset.builder.Builder

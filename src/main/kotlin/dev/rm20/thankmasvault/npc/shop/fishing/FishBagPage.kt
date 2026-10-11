@@ -1,4 +1,4 @@
-package dev.rm20.thankmasvault.shop.fishing
+package dev.rm20.thankmasvault.npc.shop.fishing
 
 import com.hypixel.hytale.codec.Codec
 import com.hypixel.hytale.codec.KeyedCodec
@@ -16,8 +16,7 @@ import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder
 import com.hypixel.hytale.server.core.universe.PlayerRef
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
 import dev.rm20.anglersalmanac.Inventory.FishBagComponent
-import dev.rm20.thankmasvault.shop.VaultShopAsset
-import dev.rm20.thankmasvault.shop.shopKepper.voiceline.voicelineInfo
+import dev.rm20.thankmasvault.utils.CameraUtil
 import javax.annotation.Nonnull
 
 class FishBagPage(
@@ -33,44 +32,43 @@ class FishBagPage(
     ) {
         commandBuilder.append("Shop/FishBagPage.ui")
 
-        val playerEntityRef = playerRef.getReference()
-        if (playerEntityRef == null) return
+        val playerEntityRef = playerRef.reference ?: return
 
         // Fetch the Fish Bag inventory
-        val fishBag = store.getComponent<FishBagComponent?>(playerEntityRef, FishBagComponent.getComponentType())
+        val fishBag = store.getComponent(playerEntityRef, FishBagComponent.getComponentType())
 
         commandBuilder.clear("#FishGrid")
 
         if (fishBag != null) {
             val bagInventory = fishBag.getInventory()
-            val capacity = bagInventory.getCapacity().toInt()
+            val capacity = bagInventory.capacity.toInt()
             var itemsShown = 0
             var totalValue = 0
             // Iterate through the fish bag slots and populate the grid
             for (i in 0..<capacity) {
                 val stack = bagInventory.getItemStack(i.toShort())
-                if (stack != null && !stack.isEmpty()) {
-                    val selector = "#FishGrid[" + itemsShown + "]"
+                if (stack != null && !stack.isEmpty) {
+                    val selector = "#FishGrid[$itemsShown]"
 
                     commandBuilder.append("#FishGrid", "Shop/FishBagSlot.ui")
-                    commandBuilder.set(selector + " #FishIcon.ItemId", stack.getItemId())
+                    commandBuilder.set("$selector #FishIcon.ItemId", stack.getItemId())
 
                     val qty = stack.getQuantity()
-                    commandBuilder.set(selector + " #FishQuantity.Text", if (qty > 1) qty.toString() else "")
+                    commandBuilder.set("$selector #FishQuantity.Text", if (qty > 1) qty.toString() else "")
 
 
                     val coinValue = FishMarket.getFishValue(stack, qty )
                     totalValue += coinValue
 
-                    val tooltipMessage = Message.translation(stack.getItem().getTranslationKey())
-                        .getAnsiMessage() + ": Sell Value: " + coinValue + " Coins"
+                    val tooltipMessage = Message.translation(stack.item.translationKey)
+                        .ansiMessage + ": Sell Value: " + coinValue + " Coins"
 
                     // Apply the message to the root Group's Tooltip property
-                    commandBuilder.set(selector + " #HoverCatcher.TooltipText", tooltipMessage)
+                    commandBuilder.set("$selector #HoverCatcher.TooltipText", tooltipMessage)
                     itemsShown++
                 }
             }
-            commandBuilder.set("#SellAllButton.Text", "Sell all: " + totalValue + " Coins")
+            commandBuilder.set("#SellAllButton.Text", "Sell all: $totalValue Coins")
 
             commandBuilder.set("#SellAllButton.Disabled", totalValue <= 0)
         }
@@ -110,6 +108,12 @@ class FishBagPage(
         sendUpdate(commandBuilder, eventBuilder, true)
     }
 
+    override fun onDismiss(ref: Ref<EntityStore>, store: Store<EntityStore>) {
+        super.onDismiss(ref, store)
+        // Resets camera back
+        CameraUtil.resetCamera(playerRef)
+    }
+
     /**
      * Event data capturing custom actions from the UI
      */
@@ -122,7 +126,7 @@ class FishBagPage(
 
             val CODEC: BuilderCodec<FishBagEventData> =
                 BuilderCodec.builder(FishBagEventData::class.java, ::FishBagEventData)
-                    .append(KeyedCodec(FishBagEventData.ACTION, Codec.STRING), { data, s ->
+                    .append(KeyedCodec(ACTION, Codec.STRING), { data, s ->
                         data.action = s ?: ""
                     }, { data -> data.action }).add().build()
         }

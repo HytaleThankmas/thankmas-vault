@@ -1,0 +1,86 @@
+$C = "../Common.ui";
+
+Group #Group {
+  $C.@Container #Containere {
+    ScrollbarStyle: $C.@DefaultScrollbarStyle;
+    LayoutMode: Top;
+    Anchor: (Width: 450, Height: 350);
+
+    #Title {
+      LayoutMode: Top;
+      $C.@Title #TitleLabel {
+        @Text = "Vault NPC Config";
+        Anchor: (Left: 20, Top: 5);
+        Style: (TextColor: #ffffff);
+      }
+    }
+
+    #Content {
+      Anchor: (Width: 450, Height: 280);
+      LayoutMode: Top;
+
+      Group #DisplayNameGroup {
+        Anchor: (Width: 400, Height: 25, Top: 5);
+        LayoutMode: Left;
+        Label #DisplayNameLabel {
+          Anchor: (Width: 150, Height: 25, Left: 0);
+          Text: "Display Name";
+          Style: (TextColor: #ffffff);
+        }
+        $C.@TextField #DisplayNameField {
+          Anchor: (Width: 240, Height: 25, Right: 0);
+        }
+      }
+
+
+      Group #DialogueIdGroup {
+        Anchor: (Width: 400, Height: 25, Top: 15);
+        LayoutMode: Left;
+        Label #DialogueIdLabel {
+          Anchor: (Width: 150, Height: 25, Left: 0);
+          Text: "Dialogue ID";
+          Style: (TextColor: #ffffff);
+        }
+        $C.@TextField #DialogueIdField {
+          Anchor: (Width: 240, Height: 25, Right: 0);
+        }
+      }
+
+      Group #ShopIdGroup {
+        Anchor: (Width: 400, Height: 25, Top: 15);
+        LayoutMode: Left;
+        Label #ShopIdLabel {
+          Anchor: (Width: 150, Height: 25, Left: 0);
+          Text: "Shop ID";
+          Style: (TextColor: #ffffff);
+        }
+        $C.@TextField #ShopIdField {
+          Anchor: (Width: 240, Height: 25, Right: 0);
+        }
+      }
+
+      Group #PointIdGroup {
+        Anchor: (Width: 400, Height: 25, Top: 15);
+        LayoutMode: Left;
+        Label #PointIdLabel {
+          Anchor: (Width: 150, Height: 25, Left: 0);
+          Text: "Camera Point ID";
+          Style: (TextColor: #ffffff);
+        }
+        $C.@TextField #PointIdField {
+          Anchor: (Width: 240, Height: 25);
+        }
+      }
+
+            $C.@TextButton #SpawnPointButton {
+              Anchor: (Width: 200, Height: 25, Top: 15);
+              Text: "spawn camera point";
+            }
+
+                        $C.@TextButton #LocateCloestPointButton {
+                          Anchor: (Width: 200, Height: 25, Top: 15);
+                          Text: "Find point";
+                        }
+    }
+  }
+}

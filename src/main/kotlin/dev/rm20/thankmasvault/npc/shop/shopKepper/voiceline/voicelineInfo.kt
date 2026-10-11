@@ -1,4 +1,4 @@
-package dev.rm20.thankmasvault.shop.shopKepper.voiceline
+package dev.rm20.thankmasvault.npc.shop.shopKepper.voiceline
 
 import gg.ginco.jellyparty.codec.annotations.SerializableObject
 

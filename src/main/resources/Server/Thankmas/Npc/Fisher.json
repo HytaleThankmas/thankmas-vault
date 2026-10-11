@@ -1,0 +1,42 @@
+{
+  "Dialogues": {
+    "StartNode": "start",
+    "Nodes": {
+      "start": {
+        "Choices": [
+          {
+            "Title": "How do I fish?",
+            "Next": "howtofish"
+          },
+          {
+            "Action": "fishMarket",
+            "Title": "I want to sell my fish"
+          },
+          {
+            "Action": "fishbag",
+            "Title": "I want to see my fishes"
+          }
+        ],
+        "Content": [
+          {
+            "Subtitle": "Anglers! Want to bring home a fish"
+          },
+          {
+            "Subtitle": "A bad day fishing is better than a good day working"
+          },
+          {
+            "Subtitle": "Hello! It is my aim to ensure you fully enjoy your time upon the water"
+          }
+        ]
+      },
+      "howtofish": {
+        "Content": [
+          {
+            "Subtitle": "Get a rod, find a body of water and [right click] to start. Each area has it own fish so start exploring. When you got some fish come back to me to sell them for some coins."
+          }
+        ],
+        "Next": "start"
+      }
+    }
+  }
+}

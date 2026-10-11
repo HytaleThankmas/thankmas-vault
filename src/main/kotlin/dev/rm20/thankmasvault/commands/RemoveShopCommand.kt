@@ -9,7 +9,7 @@ import com.hypixel.hytale.server.core.command.system.basecommands.AbstractWorldC
 import com.hypixel.hytale.server.core.permissions.provider.HytalePermissionsProvider
 import com.hypixel.hytale.server.core.universe.world.World
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
-import dev.rm20.thankmasvault.shop.shopKepper.ShopComponent
+import dev.rm20.thankmasvault.npc.VaultNpcComponent
 import javax.annotation.Nonnull
 
 class RemoveShopCommand : AbstractWorldCommand("removeshop", "Removes the attached shop from the targeted entity") {
@@ -31,7 +31,7 @@ class RemoveShopCommand : AbstractWorldCommand("removeshop", "Removes the attach
             return
         }
 
-        val removed = store.removeComponentIfExists(targetRef, ShopComponent.componentType)
+        val removed = store.removeComponentIfExists(targetRef, VaultNpcComponent.componentType)
         if (removed) {
             context.sendMessage(Message.raw("Successfully removed shop"))
         } else {

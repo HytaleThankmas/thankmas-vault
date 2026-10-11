@@ -3,8 +3,8 @@ package dev.rm20.thankmasvault.registration
 import dev.rm20.thankmasvault.ThankmasVault
 import dev.rm20.thankmasvault.economy.WalletComponent
 import dev.rm20.thankmasvault.economy.WalletComponentCodec
-import dev.rm20.thankmasvault.shop.shopKepper.ShopComponent
-import dev.rm20.thankmasvault.shop.shopKepper.ShopComponentCodec
+import dev.rm20.thankmasvault.npc.VaultNpcComponent
+import dev.rm20.thankmasvault.npc.VaultNpcComponentCodec
 
 object ComponentRegister {
     fun registerComponents(plugin: ThankmasVault) {
@@ -14,8 +14,8 @@ object ComponentRegister {
             WalletComponent::class.java, "thanksmasvault:wallet", WalletComponentCodec
         )
 
-        ShopComponent.componentType = registry.registerComponent(
-            ShopComponent::class.java, "thanksmasvault:shop", ShopComponentCodec
+        VaultNpcComponent.componentType = registry.registerComponent(
+            VaultNpcComponent::class.java, "thanksmasvault:shop", VaultNpcComponentCodec
         )
     }
 }

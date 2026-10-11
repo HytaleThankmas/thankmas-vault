@@ -1,9 +1,10 @@
-package dev.rm20.thankmasvault.shop
+package dev.rm20.thankmasvault.assets
 
 import com.hypixel.hytale.assetstore.AssetRegistry
 import com.hypixel.hytale.assetstore.AssetStore
 import com.hypixel.hytale.assetstore.map.DefaultAssetMap
-import dev.rm20.thankmasvault.shop.shopKepper.voiceline.voicelineInfo
+import dev.rm20.thankmasvault.npc.shop.ShopItem
+import dev.rm20.thankmasvault.npc.shop.shopKepper.voiceline.voicelineInfo
 import gg.ginco.jellyparty.codec.AssetBase
 import gg.ginco.jellyparty.codec.annotations.SerialName
 import gg.ginco.jellyparty.codec.annotations.SerialWithCodec
@@ -11,7 +12,14 @@ import gg.ginco.jellyparty.codec.annotations.SerializableAsset
 
 @SerializableAsset(
     path = "Thankmas/Shops",
-    extraImports = ["com.hypixel.hytale.codec.codecs.array.ArrayCodec", "java.util.function.IntFunction", "dev.rm20.thankmasvault.shop.shopKepper.voiceline.voicelineInfoCodec", "dev.rm20.thankmasvault.shop.shopKepper.voiceline.voicelineInfo"]
+    extraImports = [
+        "com.hypixel.hytale.codec.codecs.array.ArrayCodec",
+        "java.util.function.IntFunction",
+        "dev.rm20.thankmasvault.npc.shop.ShopItem",
+        "dev.rm20.thankmasvault.npc.shop.ShopItemCodec",
+        "dev.rm20.thankmasvault.npc.shop.shopKepper.voiceline.voicelineInfoCodec",
+        "dev.rm20.thankmasvault.npc.shop.shopKepper.voiceline.voicelineInfo"
+    ]
 )
 class VaultShopAsset : AssetBase<VaultShopAsset>() {
 

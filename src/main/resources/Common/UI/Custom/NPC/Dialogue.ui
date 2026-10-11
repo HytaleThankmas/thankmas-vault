@@ -1,0 +1,23 @@
+$C = "../Common.ui";
+
+
+Group #Content {
+  Anchor: (Width: 800, Height:300, Bottom: 0);
+  LayoutMode: Top;
+
+  Group #Subtitle {
+    Padding: (Bottom: 1);
+  }
+
+  Group #ChoiceContainer {
+    Anchor: (Width: 800);
+    Padding: (Top: 1, Left: 3, Right: 3);
+    LayoutMode: Top;
+
+    Group #ChoiceGrid {
+      LayoutMode: Top;
+    }
+  }
+}
+
+$C.@BackButton {}

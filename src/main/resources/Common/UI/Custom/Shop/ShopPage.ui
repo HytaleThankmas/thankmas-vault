@@ -106,9 +106,15 @@ $C.@DecoratedContainer {
   }
 }
 
-Group #Subtitle{
+Group #Content {
+  Anchor: (Width: 800, Height:50, Bottom: 0);
+  LayoutMode: Top;
 
+  Group #Subtitle {
+    Padding: (Bottom: 5);
+  }
 }
+
 $C.@BackButton {
 
 }
