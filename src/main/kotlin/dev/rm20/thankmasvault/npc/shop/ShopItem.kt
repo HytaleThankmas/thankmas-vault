@@ -20,6 +20,5 @@ class ShopItem(
     @SerialName("Description")
     var description: String? = null
 ) {
-    companion object {
-    }
+    companion object
 }

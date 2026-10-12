@@ -35,6 +35,8 @@ class DialoguePage(
 
     private var currentNodeId: String = dialogue.startNode
     private var currentHoveredSelector: String? = null
+    private var isDismissed: Boolean = false
+    private var keepCameraOnDismiss: Boolean = false
 
     override fun build(
         @Nonnull ref: Ref<EntityStore>,
@@ -153,8 +155,15 @@ class DialoguePage(
                 }
 
                 choice.action?.let { actionId ->
-                    DialogueActionRegistry.execute(actionId, playerRef, targetEntityRef, choice)
-                    onActionTriggered?.invoke(actionId, ref, store)
+                    keepCameraOnDismiss = DialogueActionRegistry.shouldKeepCamera(actionId)
+                    try {
+                        DialogueActionRegistry.execute(actionId, playerRef, targetEntityRef, choice)
+                        onActionTriggered?.invoke(actionId, ref, store)
+                    } finally {
+                        if (!isDismissed) {
+                            keepCameraOnDismiss = false
+                        }
+                    }
                 }
             }
 
@@ -213,7 +222,10 @@ class DialoguePage(
 
     override fun onDismiss(ref: Ref<EntityStore>, store: Store<EntityStore>) {
         super.onDismiss(ref, store)
-        CameraUtil.resetCamera(playerRef)
+        isDismissed = true
+        if (!keepCameraOnDismiss) {
+            CameraUtil.resetCamera(playerRef)
+        }
     }
 
     class DialoguePageData {

@@ -8,8 +8,10 @@ import dev.rm20.thankmasvault.registration.CommandRegister
 import dev.rm20.thankmasvault.registration.ComponentRegister
 import dev.rm20.thankmasvault.assets.registerAssets
 import dev.rm20.thankmasvault.npc.shop.shopKepper.BuilderActionOpenShop
+import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent
 import dev.rm20.thankmasvault.registration.DialogueActionsRegister
 import dev.rm20.thankmasvault.registration.NpcActionRegister
+import dev.rm20.thankmasvault.utils.CameraUtil
 import java.util.logging.Level
 
 class ThankmasVault(init: JavaPluginInit) : JavaPlugin(init) {
@@ -27,7 +29,11 @@ class ThankmasVault(init: JavaPluginInit) : JavaPlugin(init) {
         ComponentRegister.registerComponents(this)
         NpcActionRegister.registerNpcActions(this)
 
-        DialogueActionsRegister.registerDialogueActions();
+        DialogueActionsRegister.registerDialogueActions()
+
+        eventRegistry.registerGlobal(PlayerDisconnectEvent::class.java) { event ->
+            CameraUtil.onPlayerDisconnect(event.playerRef)
+        }
     }
 
     override fun shutdown() {

@@ -7,6 +7,4 @@ class voicelineInfo(
     var soundEventId: String = "",
     var subtitle: String = "",
     var durationMs: Int = 3000
-) {
-
-}
+)

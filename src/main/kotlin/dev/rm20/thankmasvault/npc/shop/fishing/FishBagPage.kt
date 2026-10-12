@@ -87,7 +87,7 @@ class FishBagPage(
         @Nonnull ref: Ref<EntityStore?>, @Nonnull store: Store<EntityStore?>, @Nonnull data: FishBagEventData
     ) {
         if ("sell_all" == data.action) {
-            val playerEntityRef = playerRef.getReference()
+            val playerEntityRef = playerRef.reference
             if (playerEntityRef == null) return
 
             val player = store.getComponent<Player?>(playerEntityRef, Player.getComponentType())

@@ -10,10 +10,19 @@ fun interface DialogueAction {
 }
 
 object DialogueActionRegistry {
-    private val actions = mutableMapOf<String, DialogueAction>()
+    data class RegisteredAction(
+        val action: DialogueAction,
+        val keepCamera: Boolean = false
+    )
 
-    fun register(id: String, action: DialogueAction) {
-        actions[id.lowercase()] = action
+    private val actions = mutableMapOf<String, RegisteredAction>()
+
+    fun register(id: String, keepCamera: Boolean = false, action: DialogueAction) {
+        actions[id.lowercase()] = RegisteredAction(action, keepCamera)
+    }
+
+    fun shouldKeepCamera(id: String): Boolean {
+        return actions[id.lowercase()]?.keepCamera ?: false
     }
 
     fun execute(
@@ -22,9 +31,9 @@ object DialogueActionRegistry {
         targetEntityRef: Ref<EntityStore>,
         choice: Choice
     ) {
-        val handler = actions[id.lowercase()]
-        if (handler != null) {
-            handler.execute(playerRef, targetEntityRef, choice)
+        val registered = actions[id.lowercase()]
+        if (registered != null) {
+            registered.action.execute(playerRef, targetEntityRef, choice)
         } else {
             ThankmasVault.LOGGER.atWarning().log("Unrecognized dialogue action: $id")
         }

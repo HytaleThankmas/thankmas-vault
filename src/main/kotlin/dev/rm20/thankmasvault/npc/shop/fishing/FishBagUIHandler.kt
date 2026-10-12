@@ -21,10 +21,6 @@ object FishBagUIHandler {
             val playerRef = accessor.getComponent(player.getReference()!!, PlayerRef.getComponentType())
 
             if (playerRef != null) {
-
-                val page = FishBagPage(playerRef)
-                player.pageManager.openCustomPage(player.getReference()!!, accessor, page)
-
                 if(npcRef != null) {
                     val vaultNpcComponent = npcRef.store.getComponent(npcRef, VaultNpcComponent.componentType)
                     if(vaultNpcComponent != null) {
@@ -40,6 +36,9 @@ object FishBagUIHandler {
                         ThankmasVault.LOGGER.atWarning().log("Not a npc")
                     }
                 }
+
+                val page = FishBagPage(playerRef)
+                player.pageManager.openCustomPage(player.getReference()!!, accessor, page)
             }
         }
     }

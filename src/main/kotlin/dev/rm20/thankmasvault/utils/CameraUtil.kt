@@ -15,11 +15,28 @@ import kotlin.math.sin
 import kotlin.math.sqrt
 
 
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
+
 object CameraUtil {
 
+    private val activeCameraPoints = ConcurrentHashMap<UUID, String>()
+
+    fun isCameraActiveAtPoint(playerRef: PlayerRef, pointId: String): Boolean {
+        return activeCameraPoints[playerRef.uuid] == pointId
+    }
+
+    fun isCameraActive(playerRef: PlayerRef): Boolean {
+        return activeCameraPoints.containsKey(playerRef.uuid)
+    }
+
     fun setFixedCameraFromPoint(
-        playerRef: PlayerRef, pointId: String, backOffset: Double = 0.75
+        playerRef: PlayerRef, pointId: String, backOffset: Double = 0.75, force: Boolean = false
     ): Boolean {
+        if (!force && activeCameraPoints[playerRef.uuid] == pointId) {
+            return true
+        }
+
         val ref = playerRef.reference ?: return false
         val pointEntry = ref.store.getPoint(pointId) ?: return false
 
@@ -32,6 +49,7 @@ object CameraUtil {
             pointEntry.transform.direction,
             backOffset
         )
+        activeCameraPoints[playerRef.uuid] = pointId
         return true
     }
 
@@ -82,8 +100,13 @@ object CameraUtil {
 
 
     fun resetCamera(playerRef: PlayerRef) {
+        activeCameraPoints.remove(playerRef.uuid)
         playerRef.packetHandler.writeNoCache(
             SetServerCamera(ClientCameraView.Custom, false, null)
         )
+    }
+
+    fun onPlayerDisconnect(playerRef: PlayerRef) {
+        activeCameraPoints.remove(playerRef.uuid)
     }
 }

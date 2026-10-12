@@ -9,17 +9,17 @@ import dev.rm20.anglersalmanac.Inventory.FishBagUIHandler
 object DialogueActionsRegister {
 
     fun registerDialogueActions() {
-        DialogueActionRegistry.register("openShop") { playerRef, npcRef, _ ->
+        DialogueActionRegistry.register("openShop", keepCamera = true) { playerRef, npcRef, _ ->
             openShop(playerRef, npcRef)
         }
 
-        DialogueActionRegistry.register("fishMarket") { playerRef, npcRef, _ ->
+        DialogueActionRegistry.register("fishMarket", keepCamera = true) { playerRef, npcRef, _ ->
             if(playerRef.reference == null) return@register
             val player = playerRef.reference!!.store.getComponent(playerRef.reference!!, Player.getComponentType())
             if(player != null) openFishMarket(player, npcRef)
         }
 
-        DialogueActionRegistry.register("fishbag") { playerRef, npcRef, _ ->
+        DialogueActionRegistry.register("fishbag", keepCamera = false) { playerRef, npcRef, _ ->
             if(playerRef.reference == null) return@register
             val player = playerRef.reference!!.store.getComponent(playerRef.reference!!, Player.getComponentType())
             FishBagUIHandler.openFishBag(player)

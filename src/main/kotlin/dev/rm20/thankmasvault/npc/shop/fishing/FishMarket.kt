@@ -13,16 +13,13 @@ import dev.rm20.anglersalmanac.Models.FishLootManager
 import dev.rm20.thankmasvault.economy.EconomyAPI
 import java.awt.Color
 import java.util.*
-import kotlin.math.max
-import kotlin.math.min
 import kotlin.math.roundToInt
 
 object FishMarket {
     @JvmOverloads
     fun sellAllFish(player: Player, commandContext: CommandContext? = null) {
-        val accessor = player.getReference()!!.getStore()
-        val fishBag =
-            accessor.getComponent(player.getReference()!!, FishBagComponent.getComponentType()) ?: return
+        val accessor = player.getReference()?.getStore() ?: return
+        val fishBag = accessor.getComponent(player.getReference()!!, FishBagComponent.getComponentType()) ?: return
 
         val container = fishBag.getInventory()
         var totalEarned = 0
@@ -74,7 +71,7 @@ object FishMarket {
 
     fun getFishValue(itemStack: ItemStack, qty: Int = 1): Int {
         val fishData: FishLootManager = FishLootManager.getInternalFishData(itemStack.getItemId()) ?: return 0
-        return (fishData.sellPrice * qty)
+        return (fishData.sellPrice * qty).roundToInt()
 
 
         // TODO: move to pre determined amount (need to add field to AA)
