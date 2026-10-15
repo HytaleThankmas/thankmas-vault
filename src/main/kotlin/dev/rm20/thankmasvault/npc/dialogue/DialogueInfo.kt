@@ -1,5 +1,6 @@
 package dev.rm20.thankmasvault.npc.dialogue
 
+import dev.rm20.thankmasvault.utils.TranslationUtil
 import gg.ginco.jellyparty.codec.annotations.SerialWithCodec
 import gg.ginco.jellyparty.codec.annotations.SerializableObject
 
@@ -35,8 +36,11 @@ class DialogueNode(
 @SerializableObject
 class Content(
     var soundEventId: String = "",
-    var subtitle: String = "",
-)
+    subtitle: String = "",
+) {
+    var subtitle: String = subtitle
+        get() = TranslationUtil.resolve(field) ?: ""
+}
 
 @SerializableObject
 class Choice(

@@ -5,8 +5,10 @@ import com.hypixel.hytale.codec.KeyedCodec
 import com.hypixel.hytale.codec.builder.BuilderCodec
 import com.hypixel.hytale.component.Ref
 import com.hypixel.hytale.component.Store
+import com.hypixel.hytale.protocol.packets.interface_.CustomPage
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType
+import com.hypixel.hytale.server.core.entity.entities.Player
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage
 import com.hypixel.hytale.server.core.ui.Anchor
 import com.hypixel.hytale.server.core.ui.PatchStyle
@@ -139,6 +141,7 @@ class DialoguePage(
     ) {
         val node = dialogue.nodes[currentNodeId] ?: return
 
+        if (isDismissed) return
         when (data.action) {
             "select" -> {
                 val choices = node.choices
@@ -186,6 +189,7 @@ class DialoguePage(
     }
 
     private fun handleMouseEnter(data: DialoguePageData) {
+        if (isDismissed || !data.selector.startsWith("#ChoiceSlot")) return
         val commandBuilder = UICommandBuilder()
 
         if (currentHoveredSelector != null && currentHoveredSelector != data.selector) {
@@ -201,6 +205,7 @@ class DialoguePage(
     }
 
     private fun handleMouseExit(data: DialoguePageData) {
+        if (isDismissed || !data.selector.startsWith("#ChoiceSlot")) return
         val commandBuilder = UICommandBuilder()
 
         if (data.selector.isNotEmpty()) {
@@ -211,6 +216,27 @@ class DialoguePage(
         }
 
         sendUpdate(commandBuilder, false)
+    }
+
+    override fun sendUpdate(commandBuilder: UICommandBuilder?, eventBuilder: UIEventBuilder?, clear: Boolean) {
+        if (isDismissed) return
+        val ref = playerRef.reference ?: return
+        val store = ref.store
+        val world = store.externalData.world
+
+        world.execute {
+            if (!ref.isValid || isDismissed) return@execute
+            val playerComponent = store.getComponent(ref, Player.getComponentType()) ?: return@execute
+            if (playerComponent.pageManager.customPage !== this) return@execute
+
+            playerComponent.pageManager.updateLegacyCustomPage(
+                CustomPage(
+                    javaClass.name, false, clear, lifetime,
+                    commandBuilder?.commands ?: UICommandBuilder.EMPTY_COMMAND_ARRAY,
+                    eventBuilder?.events ?: UIEventBuilder.EMPTY_EVENT_BINDING_ARRAY
+                )
+            )
+        }
     }
 
     private fun refreshUI(ref: Ref<EntityStore>, store: Store<EntityStore>) {

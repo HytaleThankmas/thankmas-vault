@@ -5,6 +5,7 @@ import com.hypixel.hytale.codec.KeyedCodec
 import com.hypixel.hytale.codec.builder.BuilderCodec
 import com.hypixel.hytale.component.Ref
 import com.hypixel.hytale.component.Store
+import com.hypixel.hytale.protocol.packets.interface_.CustomPage
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType
 import com.hypixel.hytale.server.core.Message
@@ -78,7 +79,7 @@ class ShopPage(
         if(currentHoveredSelector == null)
         {
             commandBuilder.set("#ItemInfoContainer #ItemIcon.ItemId", item.itemId)
-            val name = item.displayName ?: item.itemId.replace('_', ' ')
+            val name = item.displayName ?: Message.translation(ItemStack(item.itemId, 1).item.translationKey).ansiMessage
             commandBuilder.set("#ItemInfoContainer #ItemName.Text", name)
             commandBuilder.set("#ItemInfoContainer #ItemCost.Text", "${item.cost} Coins")
             val description = item.description ?: ""
@@ -89,10 +90,11 @@ class ShopPage(
         for (i in items.indices) {
             val item = items[i]
             val selector = "#ItemsGrid[$i]"
+            val name = item.displayName ?: Message.translation(ItemStack(item.itemId, 1).item.translationKey).ansiMessage
+
             if(currentHoveredSelector == selector)
             {
                 commandBuilder.set("#ItemInfoContainer #ItemIcon.ItemId", item.itemId)
-                val name = item.displayName ?: item.itemId.replace('_', ' ')
                 commandBuilder.set("#ItemInfoContainer #ItemName.Text", name)
                 commandBuilder.set("#ItemInfoContainer #ItemCost.Text", "${item.cost} Coins")
                 val description = item.description ?: ""
@@ -102,7 +104,6 @@ class ShopPage(
             commandBuilder.set("$selector #ItemIcon.ItemId", item.itemId)
             val qty = item.quantity
             commandBuilder.set("$selector #ItemQuantity.Text", if (qty > 1) qty.toString() else "")
-            val name = item.displayName ?: item.itemId.replace('_', ' ')
             commandBuilder.set("$selector #ItemName.Text", name)
             commandBuilder.set("$selector #ItemCost.Text", "${item.cost} Coins")
             val canAfford = balance >= item.cost
@@ -148,6 +149,7 @@ class ShopPage(
     }
 
     override fun handleDataEvent(@Nonnull ref: Ref<EntityStore>, @Nonnull store: Store<EntityStore>, @Nonnull data: ShopEventData) {
+        if (isDismissed) return
         val index = data.itemIndex
         if (index < 0 || index >= vaultShopAsset.items.size) return
         val item = vaultShopAsset.items[index]
@@ -202,6 +204,7 @@ class ShopPage(
 
     private fun handleMouseEnter(@Nonnull ref: Ref<EntityStore>, @Nonnull store: Store<EntityStore>, @Nonnull data: ShopEventData)
     {
+        if (isDismissed || !data.selector.startsWith("#ItemsGrid")) return
         val commandBuilder = UICommandBuilder()
         val item = vaultShopAsset.items[data.itemIndex]
 
@@ -212,7 +215,7 @@ class ShopPage(
         currentHoveredSelector = data.selector
 
         commandBuilder.set("#ItemInfoContainer #ItemIcon.ItemId", item.itemId)
-        val name = item.displayName ?: item.itemId.replace('_', ' ')
+        val name = item.displayName ?: Message.translation(ItemStack(item.itemId, 1).item.translationKey).ansiMessage
         commandBuilder.set("#ItemInfoContainer #ItemName.Text", name)
         commandBuilder.set("#ItemInfoContainer #ItemCost.Text", "${item.cost} Coins")
         val description = item.description ?: ""
@@ -230,6 +233,7 @@ class ShopPage(
 
     private fun handleMouseExit(@Nonnull ref: Ref<EntityStore>, @Nonnull store: Store<EntityStore>, @Nonnull data: ShopEventData)
     {
+        if (isDismissed || !data.selector.startsWith("#ItemsGrid")) return
         val commandBuilder = UICommandBuilder()
 
         // reset button
@@ -242,6 +246,27 @@ class ShopPage(
         }
 
         sendUpdate(commandBuilder, false)
+    }
+
+    override fun sendUpdate(commandBuilder: UICommandBuilder?, eventBuilder: UIEventBuilder?, clear: Boolean) {
+        if (isDismissed) return
+        val ref = playerRef.reference ?: return
+        val store = ref.store
+        val world = store.externalData.world
+
+        world.execute {
+            if (!ref.isValid || isDismissed) return@execute
+            val playerComponent = store.getComponent(ref, Player.getComponentType()) ?: return@execute
+            if (playerComponent.pageManager.customPage !== this) return@execute
+
+            playerComponent.pageManager.updateLegacyCustomPage(
+                CustomPage(
+                    javaClass.name, false, clear, lifetime,
+                    commandBuilder?.commands ?: UICommandBuilder.EMPTY_COMMAND_ARRAY,
+                    eventBuilder?.events ?: UIEventBuilder.EMPTY_EVENT_BINDING_ARRAY
+                )
+            )
+        }
     }
 
     private fun refreshUI(@Nonnull ref: Ref<EntityStore>, @Nonnull store: Store<EntityStore>) {
@@ -282,7 +307,6 @@ class ShopPage(
     private fun scheduleSubtitleHide(durationMs: Long) {
         CompletableFuture.delayedExecutor(durationMs, TimeUnit.MILLISECONDS).execute {
             if (!isDismissed) {
-                isDismissed = true
                 val commandBuilder = UICommandBuilder()
                 commandBuilder.set("#ShopkeeperSubtitleContainer.Visible", false)
                 sendUpdate(commandBuilder, false)
