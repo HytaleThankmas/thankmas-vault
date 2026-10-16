@@ -22,6 +22,9 @@ import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder
 import com.hypixel.hytale.server.core.universe.PlayerRef
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
+import dev.hardaway.wardrobe.api.property.WardrobeCamera
+import dev.hardaway.wardrobe.impl.menu.WardrobePage
+import dev.hardaway.wardrobe.impl.player.PlayerWardrobeComponent
 import dev.rm20.thankmasvault.assets.VaultShopAsset
 import dev.rm20.thankmasvault.economy.EconomyAPI
 import dev.rm20.thankmasvault.npc.VaultNpcComponent
@@ -73,45 +76,55 @@ class ShopPage(
         val balance = EconomyAPI.getBalance(ref, store)
         commandBuilder.set("#PlayerBalance.Text", "$balance Coins")
         commandBuilder.clear("#ItemsGrid")
+
+        val wardrobe = runCatching { store.ensureAndGetComponent(ref, PlayerWardrobeComponent.getComponentType()) }.getOrNull()
+
         val items = vaultShopAsset.items
-
-        val item = items[0]
-        if(currentHoveredSelector == null)
-        {
-            commandBuilder.set("#ItemInfoContainer #ItemIcon.ItemId", item.itemId)
-            val name = item.displayName ?: Message.translation(ItemStack(item.itemId, 1).item.translationKey).ansiMessage
-            commandBuilder.set("#ItemInfoContainer #ItemName.Text", name)
-            commandBuilder.set("#ItemInfoContainer #ItemCost.Text", "${item.cost} Coins")
-            val description = item.description ?: ""
-            commandBuilder.set("#ItemInfoContainer #ItemDescription.Text", description)
+        val firstItem = items.firstOrNull()
+        if (firstItem != null && currentHoveredSelector == null) {
+            updateItemInfoPreview(commandBuilder, firstItem, wardrobe)
         }
-
 
         for (i in items.indices) {
             val item = items[i]
             val selector = "#ItemsGrid[$i]"
-            val name = item.displayName ?: Message.translation(ItemStack(item.itemId, 1).item.translationKey).ansiMessage
+            val name = item.resolveName()
+            val isOwned = item.isCosmetic && wardrobe?.isUnlocked(item.resolvedCosmeticId) == true
 
-            if(currentHoveredSelector == selector)
-            {
-                commandBuilder.set("#ItemInfoContainer #ItemIcon.ItemId", item.itemId)
-                commandBuilder.set("#ItemInfoContainer #ItemName.Text", name)
-                commandBuilder.set("#ItemInfoContainer #ItemCost.Text", "${item.cost} Coins")
-                val description = item.description ?: ""
-                commandBuilder.set("#ItemInfoContainer #ItemDescription.Text", description)
+            if (currentHoveredSelector == selector) {
+                updateItemInfoPreview(commandBuilder, item, wardrobe)
             }
             commandBuilder.append("#ItemsGrid", "Shop/ShopItemCard.ui")
-            commandBuilder.set("$selector #ItemIcon.ItemId", item.itemId)
-            val qty = item.quantity
-            commandBuilder.set("$selector #ItemQuantity.Text", if (qty > 1) qty.toString() else "")
-            commandBuilder.set("$selector #ItemName.Text", name)
-            commandBuilder.set("$selector #ItemCost.Text", "${item.cost} Coins")
-            val canAfford = balance >= item.cost
-            commandBuilder.set("$selector #BuyButton.Disabled", !canAfford)
-            //commandBuilder.set("$selector HoveredBackground", if (canAfford) "#2a5a3a" else "#5a2a2a")
-            val costColor = if (canAfford) "#a0c8e0" else "#e57373"
-            commandBuilder.set("$selector #ItemCost.Style.TextColor", costColor)
 
+            if (item.isCosmetic) {
+                commandBuilder.set("$selector #ItemIcon.Visible", false)
+                commandBuilder.set("$selector #CosmeticIcon.Visible", true)
+                val iconPath = item.resolveIconPath()
+                if (iconPath != null) {
+                    commandBuilder.set("$selector #CosmeticIcon.AssetPath", iconPath)
+                }
+                commandBuilder.set("$selector #ItemQuantity.Text", "")
+            } else {
+                commandBuilder.set("$selector #ItemIcon.Visible", true)
+                commandBuilder.set("$selector #CosmeticIcon.Visible", false)
+                commandBuilder.set("$selector #ItemIcon.ItemId", item.itemId)
+                val qty = item.quantity
+                commandBuilder.set("$selector #ItemQuantity.Text", if (qty > 1) qty.toString() else "")
+            }
+
+            commandBuilder.set("$selector #ItemName.Text", name)
+
+            if (isOwned) {
+                commandBuilder.set("$selector #ItemCost.Text", "Unlocked")
+                commandBuilder.set("$selector #ItemCost.Style.TextColor", "#81c784")
+                commandBuilder.set("$selector #BuyButton.Disabled", true)
+            } else {
+                val canAfford = balance >= item.cost
+                commandBuilder.set("$selector #ItemCost.Text", "${item.cost} Coins")
+                val costColor = if (canAfford) "#a0c8e0" else "#e57373"
+                commandBuilder.set("$selector #ItemCost.Style.TextColor", costColor)
+                commandBuilder.set("$selector #BuyButton.Disabled", !canAfford)
+            }
 
             eventBuilder.addEventBinding(
                 CustomUIEventBindingType.Activating,
@@ -148,8 +161,37 @@ class ShopPage(
         }
     }
 
+    private fun updateItemInfoPreview(commandBuilder: UICommandBuilder, item: ShopItem, wardrobe: PlayerWardrobeComponent?) {
+        val name = item.resolveName()
+        val isOwned = item.isCosmetic && wardrobe?.isUnlocked(item.resolvedCosmeticId) == true
+
+        if (item.isCosmetic) {
+            commandBuilder.set("#ItemInfoContainer #ItemIcon.Visible", false)
+            commandBuilder.set("#ItemInfoContainer #CosmeticIcon.Visible", true)
+            val iconPath = item.resolveIconPath()
+            if (iconPath != null) {
+                commandBuilder.set("#ItemInfoContainer #CosmeticIcon.AssetPath", iconPath)
+            }
+        } else {
+            commandBuilder.set("#ItemInfoContainer #ItemIcon.Visible", true)
+            commandBuilder.set("#ItemInfoContainer #CosmeticIcon.Visible", false)
+            commandBuilder.set("#ItemInfoContainer #ItemIcon.ItemId", item.itemId)
+        }
+
+        commandBuilder.set("#ItemInfoContainer #ItemName.Text", name)
+        if (isOwned) {
+            commandBuilder.set("#ItemInfoContainer #ItemCost.Text", "Unlocked")
+            commandBuilder.set("#ItemInfoContainer #ItemCost.Style.TextColor", "#81c784")
+        } else {
+            commandBuilder.set("#ItemInfoContainer #ItemCost.Text", "${item.cost} Coins")
+            commandBuilder.set("#ItemInfoContainer #ItemCost.Style.TextColor", "#f0c040")
+        }
+        commandBuilder.set("#ItemInfoContainer #ItemDescription.Text", item.resolveDescription())
+    }
+
     override fun handleDataEvent(@Nonnull ref: Ref<EntityStore>, @Nonnull store: Store<EntityStore>, @Nonnull data: ShopEventData) {
         if (isDismissed) return
+
         val index = data.itemIndex
         if (index < 0 || index >= vaultShopAsset.items.size) return
         val item = vaultShopAsset.items[index]
@@ -166,6 +208,37 @@ class ShopPage(
 
         val balance = EconomyAPI.getBalance(ref, store)
         if (balance < item.cost) {
+            playerRef.sendMessage(Message.raw("You cannot afford this item!"))
+            return
+        }
+
+        if (item.isCosmetic) {
+            val cosmeticId = item.resolvedCosmeticId
+            val wardrobe = runCatching { store.ensureAndGetComponent(ref, PlayerWardrobeComponent.getComponentType()) }.getOrNull()
+            if (wardrobe == null) {
+                playerRef.sendMessage(Message.raw("Wardrobe plugin is not available!"))
+                return
+            }
+
+            if (wardrobe.isUnlocked(cosmeticId)) {
+                playerRef.sendMessage(Message.raw("You already own this cosmetic!"))
+                return
+            }
+
+            if (!EconomyAPI.withdraw(ref, store, item.cost)) {
+                playerRef.sendMessage(Message.raw("Transaction failed"))
+                return
+            }
+
+            val unlocked = wardrobe.unlockCosmetic(cosmeticId)
+            val cosmeticName = item.resolveName()
+            if (unlocked) {
+                playerRef.sendMessage(Message.raw("Unlocked cosmetic: $cosmeticName! Open /wardrobe to equip it."))
+            } else {
+                playerRef.sendMessage(Message.raw("Unlocked cosmetic: $cosmeticName."))
+            }
+
+            refreshUI(ref, store)
             return
         }
 
@@ -206,7 +279,8 @@ class ShopPage(
     {
         if (isDismissed || !data.selector.startsWith("#ItemsGrid")) return
         val commandBuilder = UICommandBuilder()
-        val item = vaultShopAsset.items[data.itemIndex]
+        val item = vaultShopAsset.items.getOrNull(data.itemIndex) ?: return
+        val wardrobe = runCatching { store.ensureAndGetComponent(ref, PlayerWardrobeComponent.getComponentType()) }.getOrNull()
 
         if (currentHoveredSelector != null && currentHoveredSelector != data.selector) {
             commandBuilder.set("$currentHoveredSelector #CardBorder.Background", "#14202c")
@@ -214,21 +288,19 @@ class ShopPage(
         }
         currentHoveredSelector = data.selector
 
-        commandBuilder.set("#ItemInfoContainer #ItemIcon.ItemId", item.itemId)
-        val name = item.displayName ?: Message.translation(ItemStack(item.itemId, 1).item.translationKey).ansiMessage
-        commandBuilder.set("#ItemInfoContainer #ItemName.Text", name)
-        commandBuilder.set("#ItemInfoContainer #ItemCost.Text", "${item.cost} Coins")
-        val description = item.description ?: ""
-        commandBuilder.set("#ItemInfoContainer #ItemDescription.Text", description)
+        updateItemInfoPreview(commandBuilder, item, wardrobe)
 
         // move button slightly to the right
         if (data.selector.isNotEmpty()) {
             commandBuilder.set("${data.selector} #CardBorder.Background", "#24394e")
-
             commandBuilder.setObject("${data.selector} #CardBorder.Anchor", HOVERED_CARD_ANCHOR)
         }
 
         sendUpdate(commandBuilder, false)
+    }
+
+    override fun sendUpdate(commandBuilder: UICommandBuilder?, clear: Boolean) {
+        sendUpdate(commandBuilder, null, clear)
     }
 
     private fun handleMouseExit(@Nonnull ref: Ref<EntityStore>, @Nonnull store: Store<EntityStore>, @Nonnull data: ShopEventData)

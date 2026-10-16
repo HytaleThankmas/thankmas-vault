@@ -18,6 +18,10 @@ Group {
           Anchor: (Width: 64, Height: 64);
           ShowQualityBackground: false;
         }
+        AssetImage #CosmeticIcon {
+          Anchor: (Width: 64, Height: 64);
+          Visible: false;
+        }
         Label #ItemQuantity {
           Anchor: (Right: 4, Bottom: 2);
           Style: (

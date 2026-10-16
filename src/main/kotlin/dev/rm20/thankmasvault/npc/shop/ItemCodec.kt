@@ -7,6 +7,7 @@ import com.hypixel.hytale.codec.schema.config.Schema
 import com.hypixel.hytale.codec.util.RawJsonReader
 import com.hypixel.hytale.codec.validation.ValidatableCodec
 import com.hypixel.hytale.server.core.asset.type.item.config.Item
+import dev.hardaway.wardrobe.impl.cosmetic.CosmeticAsset
 import org.bson.BsonValue
 
 object ItemCodec : Codec<String>, ValidatableCodec<String> {
@@ -27,7 +28,11 @@ object ItemCodec : Codec<String>, ValidatableCodec<String> {
     }
 
     override fun validate(t: String, extraInfo: ExtraInfo) {
-        Item.VALIDATOR_CACHE.validator.accept(t, extraInfo.validationResults)
+        if (t.isEmpty()) return
+        val isCosmetic = runCatching { CosmeticAsset.getAssetMap().getAsset(t) != null }.getOrDefault(false)
+        if (!isCosmetic) {
+            Item.VALIDATOR_CACHE.validator.accept(t, extraInfo.validationResults)
+        }
     }
 
     override fun validateDefaults(extraInfo: ExtraInfo, tested: MutableSet<Codec<*>>) {
@@ -39,3 +44,4 @@ object ItemCodec : Codec<String>, ValidatableCodec<String> {
         return schema
     }
 }
+

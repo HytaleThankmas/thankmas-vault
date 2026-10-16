@@ -33,4 +33,5 @@ dependencies {
     ksp("gg.ginco:hytale-codec-processor:1.2.1")
     // implementation("com.github.rm20killer:CodecAnnotation:ac9cf6574a")
     compileOnly(files("../../libs/AnglersAlmanac-1.2.2-Thankmas.jar"))
+    compileOnly(files("../../libs/Wardrobe-0.3.5+0.7.2.jar"))
 }
