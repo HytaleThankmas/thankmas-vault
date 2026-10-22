@@ -1,0 +1,34 @@
+{
+  "Items": [
+    {
+      "CosmeticId": "KigurumiLandWardrobePrideAceHead",
+      "Cost": 50,
+      "Description": "An adorable Ace Dragon Kigurumi Hood to show off your style!"
+    },
+    {
+      "CosmeticId": "KigurumiLandWardrobePrideAceTop",
+      "Cost": 75,
+      "Description": "Cozy Ace Dragon Kigurumi Onesie top."
+    },
+    {
+      "CosmeticId": "KigurumiLandWardrobePrideAceHands",
+      "Cost": 30,
+      "Description": "Soft Ace Dragon Kigurumi Paws gloves."
+    },
+    {
+      "CosmeticId": "KigurumiLandWardrobePrideAceLegs",
+      "Cost": 50,
+      "Description": "Warm Ace Dragon Kigurumi Leggings."
+    },
+    {
+      "CosmeticId": "KigurumiLandWardrobePrideBiHead",
+      "Cost": 50,
+      "Description": "A charming Bi Frog Kigurumi Hood."
+    },
+    {
+      "CosmeticId": "KigurumiLandWardrobePrideBiTop",
+      "Cost": 75,
+      "Description": "A comfy Bi Frog Kigurumi Onesie."
+    }
+  ]
+}
