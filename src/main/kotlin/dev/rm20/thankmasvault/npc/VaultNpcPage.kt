@@ -15,7 +15,7 @@ import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder
 import com.hypixel.hytale.server.core.universe.PlayerRef
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
 import dev.rm20.thankmasvault.utils.findClosestPointForPlayer
-import dev.rm20.thankmasvault.utils.spawnPointForPlayer
+import dev.rm20.thankmasvault.utils.spawnCameraPointForNpc
 import javax.annotation.Nonnull
 
 class VaultNpcPage(
@@ -159,7 +159,7 @@ class VaultNpcPage(
 
         if (data.action == "spawn_point") {
             val pointName = if (config.displayName.isNotBlank()) "${config.displayName}_Camera" else "NPC_Camera_" + getRandomString(5)
-            val spawnedPoint = store.spawnPointForPlayer(playerRef, pointName)
+            val spawnedPoint = store.spawnCameraPointForNpc(playerRef, targetEntityRef, pointName)
             config.pointId = spawnedPoint.id
             store.putComponent(targetEntityRef, VaultNpcComponent.componentType, config)
 
@@ -167,7 +167,7 @@ class VaultNpcPage(
             updateCommand.set("#PointIdField.Value", spawnedPoint.id)
             sendUpdate(updateCommand, false)
 
-            playerRef.sendMessage(Message.raw("[VaultNPC] Spawned a point '${spawnedPoint.id}' at your position and updated Point ID."))
+            playerRef.sendMessage(Message.raw("[VaultNPC] Spawned a camera point '${spawnedPoint.id}' for NPC and updated Point ID."))
             return
         }
 
