@@ -35,7 +35,7 @@ object ShopOpener {
         }
 
         // Open shop
-        val page = ShopPage(playerRef, vaultShopAsset,voiceLine)
+        val page = ShopPage(playerRef, vaultShopAsset,targetEntityRef, voiceLine)
         player.pageManager.openCustomPage(ref, store, page)
     }
 

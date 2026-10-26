@@ -22,9 +22,8 @@ import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder
 import com.hypixel.hytale.server.core.universe.PlayerRef
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
-import dev.hardaway.wardrobe.api.property.WardrobeCamera
-import dev.hardaway.wardrobe.impl.menu.WardrobePage
 import dev.hardaway.wardrobe.impl.player.PlayerWardrobeComponent
+import dev.rm20.thankmasvault.assets.ShopItemAsset
 import dev.rm20.thankmasvault.assets.VaultShopAsset
 import dev.rm20.thankmasvault.economy.EconomyAPI
 import dev.rm20.thankmasvault.npc.VaultNpcComponent
@@ -37,15 +36,15 @@ import javax.annotation.Nonnull
 // TODO: Make the ui similar to warframe's shop so npc on the right with shop on the left
 
 class ShopPage(
-    playerRef: PlayerRef, val vaultShopAsset: VaultShopAsset, val voiceLine: voicelineInfo? = null
+    playerRef: PlayerRef, val vaultShopAsset: VaultShopAsset, val NPCRef: Ref<EntityStore>? =null, val voiceLine: voicelineInfo? = null,
 ) : InteractiveCustomUIPage<ShopPage.ShopEventData>(
     playerRef, CustomPageLifetime.CanDismissOrCloseThroughInteraction, ShopEventData.CODEC
 ) {
-
+    private val shopItems: List<ShopItemAsset> get() = vaultShopAsset.getShopItems()
     private var isDismissed = false
     private var hasScheduledSubtitleHide = false
     private var currentHoveredSelector: String? = null
-
+    private var NPCname: String? = null
     override fun build(
         @Nonnull ref: Ref<EntityStore>,
         @Nonnull commandBuilder: UICommandBuilder,
@@ -57,11 +56,11 @@ class ShopPage(
         if (voiceLine != null && !isDismissed) {
             commandBuilder.append("#Subtitle", "Shop/ShopSubtitle.ui")
 
-            val name = store.getComponent(ref, VaultNpcComponent.componentType)?.displayName
+            NPCname = NPCRef?.let { store.getComponent(it, VaultNpcComponent.componentType) }?.displayName
 
-            if (name.isNullOrBlank())
+            if (NPCname.isNullOrBlank())
             {
-                commandBuilder.set("#ShopkeeperName.Text", "[${name}]: ")
+                commandBuilder.set("#ShopkeeperName.Text", "[${NPCname}]: ")
             }
 
             commandBuilder.set("#ShopkeeperSubtitleText.Text", "\"${voiceLine.subtitle}\"")
@@ -79,7 +78,7 @@ class ShopPage(
 
         val wardrobe = runCatching { store.ensureAndGetComponent(ref, PlayerWardrobeComponent.getComponentType()) }.getOrNull()
 
-        val items = vaultShopAsset.items
+        val items = shopItems
         val firstItem = items.firstOrNull()
         if (firstItem != null && currentHoveredSelector == null) {
             updateItemInfoPreview(commandBuilder, firstItem, wardrobe)
@@ -107,7 +106,7 @@ class ShopPage(
             } else {
                 commandBuilder.set("$selector #ItemIcon.Visible", true)
                 commandBuilder.set("$selector #CosmeticIcon.Visible", false)
-                commandBuilder.set("$selector #ItemIcon.ItemId", item.itemId)
+                commandBuilder.set("$selector #ItemIcon.ItemId", item.effectiveItemId)
                 val qty = item.quantity
                 commandBuilder.set("$selector #ItemQuantity.Text", if (qty > 1) qty.toString() else "")
             }
@@ -119,8 +118,9 @@ class ShopPage(
                 commandBuilder.set("$selector #ItemCost.Style.TextColor", "#81c784")
                 commandBuilder.set("$selector #BuyButton.Disabled", true)
             } else {
-                val canAfford = balance >= item.cost
-                commandBuilder.set("$selector #ItemCost.Text", "${item.cost} Coins")
+                val effectiveCost = item.getPrice(vaultShopAsset)
+                val canAfford = balance >= effectiveCost
+                commandBuilder.set("$selector #ItemCost.Text", "$effectiveCost Coins")
                 val costColor = if (canAfford) "#a0c8e0" else "#e57373"
                 commandBuilder.set("$selector #ItemCost.Style.TextColor", costColor)
                 commandBuilder.set("$selector #BuyButton.Disabled", !canAfford)
@@ -161,7 +161,7 @@ class ShopPage(
         }
     }
 
-    private fun updateItemInfoPreview(commandBuilder: UICommandBuilder, item: ShopItem, wardrobe: PlayerWardrobeComponent?) {
+    private fun updateItemInfoPreview(commandBuilder: UICommandBuilder, item: ShopItemAsset, wardrobe: PlayerWardrobeComponent?) {
         val name = item.resolveName()
         val isOwned = item.isCosmetic && wardrobe?.isUnlocked(item.resolvedCosmeticId) == true
 
@@ -175,7 +175,7 @@ class ShopPage(
         } else {
             commandBuilder.set("#ItemInfoContainer #ItemIcon.Visible", true)
             commandBuilder.set("#ItemInfoContainer #CosmeticIcon.Visible", false)
-            commandBuilder.set("#ItemInfoContainer #ItemIcon.ItemId", item.itemId)
+            commandBuilder.set("#ItemInfoContainer #ItemIcon.ItemId", item.effectiveItemId)
         }
 
         commandBuilder.set("#ItemInfoContainer #ItemName.Text", name)
@@ -183,7 +183,8 @@ class ShopPage(
             commandBuilder.set("#ItemInfoContainer #ItemCost.Text", "Unlocked")
             commandBuilder.set("#ItemInfoContainer #ItemCost.Style.TextColor", "#81c784")
         } else {
-            commandBuilder.set("#ItemInfoContainer #ItemCost.Text", "${item.cost} Coins")
+            val effectiveCost = item.getPrice(vaultShopAsset)
+            commandBuilder.set("#ItemInfoContainer #ItemCost.Text", "$effectiveCost Coins")
             commandBuilder.set("#ItemInfoContainer #ItemCost.Style.TextColor", "#f0c040")
         }
         commandBuilder.set("#ItemInfoContainer #ItemDescription.Text", item.resolveDescription())
@@ -193,8 +194,8 @@ class ShopPage(
         if (isDismissed) return
 
         val index = data.itemIndex
-        if (index < 0 || index >= vaultShopAsset.items.size) return
-        val item = vaultShopAsset.items[index]
+        if (index < 0 || index >= shopItems.size) return
+        val item = shopItems[index]
 
         when (data.action) {
             "buy" -> handlePurchase(ref, store, item)
@@ -203,11 +204,12 @@ class ShopPage(
         }
     }
 
-    private fun handlePurchase(ref: Ref<EntityStore>, store: Store<EntityStore>, item: ShopItem) {
+    private fun handlePurchase(ref: Ref<EntityStore>, store: Store<EntityStore>, item: ShopItemAsset) {
         val playerEntityRef = playerRef.reference ?: return
 
         val balance = EconomyAPI.getBalance(ref, store)
-        if (balance < item.cost) {
+        val effectiveCost = item.getPrice(vaultShopAsset)
+        if (balance < effectiveCost) {
             playerRef.sendMessage(Message.raw("You cannot afford this item!"))
             return
         }
@@ -225,7 +227,7 @@ class ShopPage(
                 return
             }
 
-            if (!EconomyAPI.withdraw(ref, store, item.cost)) {
+            if (!EconomyAPI.withdraw(ref, store, effectiveCost)) {
                 playerRef.sendMessage(Message.raw("Transaction failed"))
                 return
             }
@@ -245,7 +247,7 @@ class ShopPage(
         val combinedInventory: ItemContainer = InventoryComponent.getCombined(
             store, playerEntityRef, *InventoryComponent.HOTBAR_FIRST
         )
-        val stack = ItemStack(item.itemId, item.quantity)
+        val stack = ItemStack(item.effectiveItemId, item.quantity)
 
         // full inv
         if (!combinedInventory.canAddItemStack(stack)) {
@@ -254,7 +256,7 @@ class ShopPage(
         }
 
         // Failure with Economy
-        if (!EconomyAPI.withdraw(ref, store, item.cost)) {
+        if (!EconomyAPI.withdraw(ref, store, effectiveCost)) {
             playerRef.sendMessage(Message.raw("Transaction failed"))
             return
         }
@@ -279,7 +281,7 @@ class ShopPage(
     {
         if (isDismissed || !data.selector.startsWith("#ItemsGrid")) return
         val commandBuilder = UICommandBuilder()
-        val item = vaultShopAsset.items.getOrNull(data.itemIndex) ?: return
+        val item = shopItems.getOrNull(data.itemIndex) ?: return
         val wardrobe = runCatching { store.ensureAndGetComponent(ref, PlayerWardrobeComponent.getComponentType()) }.getOrNull()
 
         if (currentHoveredSelector != null && currentHoveredSelector != data.selector) {

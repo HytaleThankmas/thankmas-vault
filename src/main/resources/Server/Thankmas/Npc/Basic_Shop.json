@@ -1,0 +1,29 @@
+{
+  "Dialogues": {
+    "StartNode": "start",
+    "Nodes": {
+      "start": {
+        "Choices": [
+          {
+            "Title": "Open shop",
+            "Action": "openShop"
+          },
+          {
+            "Title": "Bye"
+          }
+        ],
+        "Content": [
+          {
+            "Subtitle": "Authentically hand-crafted"
+          },
+          {
+            "Subtitle": "This stuff is so up your alley you're practically"
+          },
+          {
+            "Subtitle": "Soooo... what are we thinking?"
+          }
+        ]
+      }
+    }
+  }
+}
