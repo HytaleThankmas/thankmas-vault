@@ -9,11 +9,13 @@ import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType
 import com.hypixel.hytale.server.core.Message
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage
+import com.hypixel.hytale.server.core.modules.entity.component.DisplayNameComponent
 import com.hypixel.hytale.server.core.ui.builder.EventData
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder
 import com.hypixel.hytale.server.core.universe.PlayerRef
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
+import dev.rm20.thankmasvault.npc.player.AppearanceHelper
 import dev.rm20.thankmasvault.utils.findClosestPointForPlayer
 import dev.rm20.thankmasvault.utils.spawnCameraPointForNpc
 import javax.annotation.Nonnull
@@ -113,6 +115,26 @@ class VaultNpcPage(
             false
         )
 
+        val isPlayer = AppearanceHelper.isPlayerNpc(targetEntityRef, store)
+        if (isPlayer) {
+            eventBuilder.addEventBinding(
+                CustomUIEventBindingType.Activating,
+                "#CopyAppearanceButton",
+                EventData.of("Action", "copy_appearance"),
+                false
+            )
+
+            eventBuilder.addEventBinding(
+                CustomUIEventBindingType.Activating,
+                "#FetchSkinByNameButton",
+                EventData.of("Action", "fetch_skin_by_name"),
+                false
+            )
+        } else {
+            commandBuilder.set("#PlayerAppearanceGroup.Visible", false)
+            commandBuilder.remove("#PlayerAppearanceGroup")
+        }
+
         val config = store.getComponent(targetEntityRef, VaultNpcComponent.componentType)
         commandBuilder.set("#DisplayNameField.Value", config?.displayName ?: "")
         commandBuilder.set("#ShopIdField.Value", config?.shopId ?: "")
@@ -141,8 +163,18 @@ class VaultNpcPage(
         var changed = false
 
         if (data.displayName != null) {
-            config.displayName = data.displayName!!.trim()
+            val newName = data.displayName!!.trim()
+            config.displayName = newName
             changed = true
+            store.externalData.world.execute {
+                if (targetEntityRef.isValid) {
+                    store.putComponent(
+                        targetEntityRef,
+                        DisplayNameComponent.getComponentType(),
+                        DisplayNameComponent(Message.raw(newName))
+                    )
+                }
+            }
         }
         if (data.shopId != null) {
             config.shopId = data.shopId!!.trim()
@@ -161,7 +193,11 @@ class VaultNpcPage(
             val pointName = if (config.displayName.isNotBlank()) "${config.displayName}_Camera" else "NPC_Camera_" + getRandomString(5)
             val spawnedPoint = store.spawnCameraPointForNpc(playerRef, targetEntityRef, pointName)
             config.pointId = spawnedPoint.id
-            store.putComponent(targetEntityRef, VaultNpcComponent.componentType, config)
+            store.externalData.world.execute {
+                if (targetEntityRef.isValid) {
+                    store.putComponent(targetEntityRef, VaultNpcComponent.componentType, config)
+                }
+            }
 
             val updateCommand = UICommandBuilder()
             updateCommand.set("#PointIdField.Value", spawnedPoint.id)
@@ -179,7 +215,11 @@ class VaultNpcPage(
             }
 
             config.pointId = closest.id
-            store.putComponent(targetEntityRef, VaultNpcComponent.componentType, config)
+            store.externalData.world.execute {
+                if (targetEntityRef.isValid) {
+                    store.putComponent(targetEntityRef, VaultNpcComponent.componentType, config)
+                }
+            }
 
             val updateCommand = UICommandBuilder()
             updateCommand.set("#PointIdField.Value", closest.id)
@@ -189,11 +229,63 @@ class VaultNpcPage(
             return
         }
 
+        if (data.action == "copy_appearance") {
+            if (!AppearanceHelper.isPlayerNpc(targetEntityRef, store)) {
+                playerRef.sendMessage(Message.raw("[VaultNPC] Not a player NPC"))
+                return
+            }
+
+            val playerRefEntity = playerRef.reference
+            if (playerRefEntity != null && playerRefEntity.isValid) {
+                AppearanceHelper.copyPlayerAppearanceToNpc(
+                    playerRefEntity,
+                    targetEntityRef,
+                    store,
+                    saveToConfig = true
+                )
+                playerRef.sendMessage(Message.raw("[VaultNPC] Copied your appearance to the NPC."))
+            } else {
+                playerRef.sendMessage(Message.raw("[VaultNPC] Player reference not found."))
+            }
+            return
+        }
+
+        if (data.action == "fetch_skin_by_name") {
+            if (!AppearanceHelper.isPlayerNpc(targetEntityRef, store)) {
+                playerRef.sendMessage(Message.raw("[VaultNPC] Not a player NPC"))
+                return
+            }
+
+            val targetName = config.displayName
+            if (targetName.isBlank()) {
+                playerRef.sendMessage(Message.raw("[VaultNPC] NPC Display Name is empty. Enter a username in Display Name first."))
+                return
+            }
+
+            playerRef.sendMessage(Message.raw("[VaultNPC] Searching skin for '$targetName'"))
+            AppearanceHelper.copyPlayerAppearanceByUsername(
+                targetName,
+                targetEntityRef,
+                store,
+                saveToConfig = true
+            ).thenAccept { success ->
+                if (success) {
+                    playerRef.sendMessage(Message.raw("[VaultNPC] Applied skin for '$targetName'!"))
+                } else {
+                    playerRef.sendMessage(Message.raw("[VaultNPC] Could not find skin for '$targetName'"))
+                }
+            }
+            return
+        }
+
         if (changed) {
-            store.putComponent(targetEntityRef, VaultNpcComponent.componentType, config)
+            store.externalData.world.execute {
+                if (targetEntityRef.isValid) {
+                    store.putComponent(targetEntityRef, VaultNpcComponent.componentType, config)
+                }
+            }
         }
     }
-
 
     val allowedChars = ('A'..'Z') + ('a'..'z') + ('0'..'9')
     fun getRandomString(length: Int = 5): String =

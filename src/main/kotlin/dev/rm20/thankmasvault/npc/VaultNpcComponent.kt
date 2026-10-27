@@ -12,6 +12,8 @@ class VaultNpcComponent : Component<EntityStore> {
     var shopId: String = ""
     var pointId: String = ""
     var dialogueId: String = ""
+    var skinJson: String = ""
+    var attachmentsJson: String = ""
 
     override fun clone(): Component<EntityStore> {
         val copy = VaultNpcComponent()
@@ -19,6 +21,8 @@ class VaultNpcComponent : Component<EntityStore> {
         copy.shopId = this.shopId
         copy.pointId = this.pointId
         copy.dialogueId = this.dialogueId
+        copy.skinJson = this.skinJson
+        copy.attachmentsJson = this.attachmentsJson
         return copy
     }
 

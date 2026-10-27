@@ -1,6 +1,5 @@
 package dev.rm20.thankmasvault.registration
 
-import dev.rm20.anglersalmanac.Commands.RemoveFishCommand
 import dev.rm20.thankmasvault.ThankmasVault
 import dev.rm20.thankmasvault.commands.*
 
@@ -13,6 +12,7 @@ object CommandRegister {
         commandRegistry.registerCommand(ShopCommand())
         commandRegistry.registerCommand(AttachShopCommand())
         commandRegistry.registerCommand(RemoveShopCommand())
+        commandRegistry.registerCommand(SpawnPlayerNpcCommand())
         commandRegistry.registerCommand(testui())
     }
 }

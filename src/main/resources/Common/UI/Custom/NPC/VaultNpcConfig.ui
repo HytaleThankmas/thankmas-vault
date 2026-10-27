@@ -4,7 +4,7 @@ Group #Group {
   $C.@Container #Containere {
     ScrollbarStyle: $C.@DefaultScrollbarStyle;
     LayoutMode: Top;
-    Anchor: (Width: 450, Height: 350);
+    Anchor: (Width: 450, Height: 430);
 
     #Title {
       LayoutMode: Top;
@@ -16,7 +16,7 @@ Group #Group {
     }
 
     #Content {
-      Anchor: (Width: 450, Height: 280);
+      Anchor: (Width: 450, Height: 370);
       LayoutMode: Top;
 
       Group #DisplayNameGroup {
@@ -72,15 +72,30 @@ Group #Group {
         }
       }
 
-            $C.@TextButton #SpawnPointButton {
-              Anchor: (Width: 200, Height: 25, Top: 15);
-              Text: "spawn camera point";
-            }
+      $C.@TextButton #SpawnPointButton {
+        Anchor: (Width: 200, Height: 25, Top: 15);
+        Text: "spawn camera point";
+      }
 
-                        $C.@TextButton #LocateCloestPointButton {
-                          Anchor: (Width: 200, Height: 25, Top: 15);
-                          Text: "Find point";
-                        }
+      $C.@TextButton #LocateCloestPointButton {
+        Anchor: (Width: 200, Height: 25, Top: 15);
+        Text: "Find point";
+      }
+
+      Group #PlayerAppearanceGroup {
+        Anchor: (Width: 400, Height: 75, Top: 15);
+        LayoutMode: Top;
+
+        $C.@TextButton #CopyAppearanceButton {
+          Anchor: (Width: 200, Height: 25);
+          Text: "Copy My Appearance";
+        }
+
+        $C.@TextButton #FetchSkinByNameButton {
+          Anchor: (Width: 200, Height: 25, Top: 10);
+          Text: "Fetch Skin From Name";
+        }
+      }
     }
   }
 }

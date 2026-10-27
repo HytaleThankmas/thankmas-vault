@@ -1,0 +1,234 @@
+{
+  "Type": "Generic",
+  "StartState": "Idle",
+  "BusyStates": [
+    "$Interaction"
+  ],
+  "Appearance": "Player",
+  "MaxHealth": 50,
+  "NameTranslationKey": {
+    "Compute": "NameTranslationKey"
+  },
+  "MotionControllerList": [
+    {
+      "Type": "Walk",
+      "MaxWalkSpeed": 5,
+      "Gravity": 10,
+      "RunThreshold": 0.3,
+      "MaxFallSpeed": 15,
+      "MaxRotationSpeed": 360,
+      "Acceleration": 10
+    }
+  ],
+  "Instructions": [
+    {
+      "Instructions": [
+        {
+          "Sensor": {
+            "Type": "State",
+            "State": "Idle"
+          },
+          "Instructions": [
+            {
+              "Sensor": {
+                "Type": "Player",
+                "Range": 8
+              },
+              "Actions": [
+                {
+                  "Type": "PlayAnimation",
+                  "Slot": "Status",
+                  "Animation": "Wave"
+                },
+                {
+                  "Type": "State",
+                  "State": "Watching"
+                }
+              ],
+              "ActionsBlocking": true,
+              "$Comment": "Wave at player when they approach"
+            },
+            {
+              "Sensor": {
+                "Type": "Any"
+              },
+              "BodyMotion": {
+                "Type": "Nothing"
+              }
+            }
+          ],
+          "$Comment": "Idle state - no player nearby"
+        },
+        {
+          "Sensor": {
+            "Type": "State",
+            "State": "Watching"
+          },
+          "Instructions": [
+            {
+              "Sensor": {
+                "Type": "Player",
+                "Range": 12
+              },
+              "HeadMotion": {
+                "Type": "Watch"
+              },
+              "Continue": true,
+              "$Comment": "Watch nearby players with head"
+            },
+            {
+              "Sensor": {
+                "Type": "Any"
+              },
+              "Actions": [
+                {
+                  "Type": "Timeout",
+                  "Delay": [
+                    2,
+                    2
+                  ],
+                  "Action": {
+                    "Type": "PlayAnimation",
+                    "Slot": "Status"
+                  }
+                }
+              ],
+              "Continue": true,
+              "$Comment": "Clear wave animation after delay"
+            },
+            {
+              "Sensor": {
+                "Type": "Player",
+                "Range": 12
+              }
+            },
+            {
+              "Sensor": {
+                "Type": "Any"
+              },
+              "Actions": [
+                {
+                  "Type": "State",
+                  "State": "Idle"
+                }
+              ],
+              "$Comment": "Return to idle if player leaves"
+            }
+          ],
+          "$Comment": "Watching state - player nearby"
+        },
+        {
+          "Sensor": {
+            "Type": "State",
+            "State": "$Interaction"
+          },
+          "Instructions": [
+            {
+              "Sensor": {
+                "Type": "InteractionTarget",
+                "Range": 6
+              },
+              "HeadMotion": {
+                "Type": "Watch"
+              },
+              "$Comment": "Interaction state - look at player while interaction is active"
+            },
+            {
+              "Sensor": {
+                "Type": "Any"
+              },
+              "Actions": [
+                {
+                  "Type": "State",
+                  "State": "Idle"
+                }
+              ],
+              "$Comment": "Return to idle if player leaves interaction range"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Sensor": {
+        "Type": "InteractionIteration"
+      },
+      "Instructions": [
+        {
+          "Sensor": {
+            "Type": "State",
+            "State": "$Interaction"
+          },
+          "Actions": [
+            {
+              "Type": "LockOnInteractionTarget"
+            },
+            {
+              "Type": "OpenNpcDialogue"
+            },
+            {
+              "Type": "OpenVaultShop"
+            },
+            {
+              "Type": "State",
+              "State": "$Interaction"
+            }
+          ]
+        },
+        {
+          "Sensor": {
+            "Type": "Any"
+          },
+          "Actions": [
+            {
+              "Type": "LockOnInteractionTarget"
+            },
+            {
+              "Type": "OpenNpcDialogue"
+            },
+            {
+              "Type": "OpenVaultShop"
+            },
+            {
+              "Type": "State",
+              "State": "$Interaction"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "Parameters": {
+    "Invulnerable": {
+      "Value": true,
+      "Description": "Whether this NPC is invulnerable."
+    },
+    "MemoriesNameOverride": {
+      "Value": "Player",
+      "Description": "Overrides the memory name if set"
+    },
+    "NameTranslationKey": {
+      "Value": "Player",
+      "Description": "Translation key for NPC name display"
+    }
+  },
+  "DefaultNPCAttitude": "Ignore",
+  "DefaultPlayerAttitude": "Neutral",
+  "IsMemory": false,
+  "MemoriesCategory": "Kweebec",
+  "MemoriesNameOverride": {
+    "Compute": "MemoriesNameOverride"
+  },
+  "DisableDamageGroups": [
+    "Self"
+  ],
+  "CombatConfig": {
+    "EntityEffects": [
+      "Immunity_Environmental"
+    ]
+  },
+  "Invulnerable": {
+    "Compute": "Invulnerable"
+  },
+  "KnockbackScale": 0.5
+}

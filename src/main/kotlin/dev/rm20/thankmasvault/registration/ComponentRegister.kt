@@ -3,6 +3,9 @@ package dev.rm20.thankmasvault.registration
 import dev.rm20.thankmasvault.ThankmasVault
 import dev.rm20.thankmasvault.economy.WalletComponent
 import dev.rm20.thankmasvault.economy.WalletComponentCodec
+import dev.rm20.thankmasvault.npc.player.NpcAppearanceSystem
+import dev.rm20.thankmasvault.npc.player.NpcLoadSystem
+import dev.rm20.thankmasvault.npc.player.NpcStoreSystem
 import dev.rm20.thankmasvault.npc.VaultNpcComponent
 import dev.rm20.thankmasvault.npc.VaultNpcComponentCodec
 
@@ -17,5 +20,9 @@ object ComponentRegister {
         VaultNpcComponent.componentType = registry.registerComponent(
             VaultNpcComponent::class.java, "thanksmasvault:shop", VaultNpcComponentCodec
         )
+
+        registry.registerSystem(NpcLoadSystem())
+        registry.registerSystem(NpcStoreSystem())
+        registry.registerSystem(NpcAppearanceSystem())
     }
 }
