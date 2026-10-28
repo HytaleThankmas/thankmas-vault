@@ -1,16 +1,11 @@
 package dev.rm20.thankmasvault.npc.player
 
-import com.hypixel.hytale.component.AddReason
 import com.hypixel.hytale.component.CommandBuffer
 import com.hypixel.hytale.component.ComponentType
-import com.hypixel.hytale.component.Holder
 import com.hypixel.hytale.component.Ref
-import com.hypixel.hytale.component.RemoveReason
 import com.hypixel.hytale.component.Store
 import com.hypixel.hytale.component.query.Query
-import com.hypixel.hytale.component.system.HolderSystem
 import com.hypixel.hytale.component.system.RefChangeSystem
-import com.hypixel.hytale.component.system.RefSystem
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
 import dev.rm20.thankmasvault.npc.VaultNpcComponent
 
@@ -26,13 +21,12 @@ class NpcAppearanceSystem : RefChangeSystem<EntityStore, VaultNpcComponent>() {
         store: Store<EntityStore>,
         commandBuffer: CommandBuffer<EntityStore>
     ) {
-        if (component.skinJson.isNotBlank() || component.attachmentsJson.isNotBlank()) {
             store.externalData.world.execute {
                 if (ref.isValid) {
                     AppearanceHelper.applySavedAppearance(ref, store, component)
                 }
             }
-        }
+
     }
 
     override fun onComponentSet(
@@ -42,13 +36,12 @@ class NpcAppearanceSystem : RefChangeSystem<EntityStore, VaultNpcComponent>() {
         store: Store<EntityStore>,
         commandBuffer: CommandBuffer<EntityStore>
     ) {
-        if (newComponent.skinJson.isNotBlank() || newComponent.attachmentsJson.isNotBlank()) {
             store.externalData.world.execute {
                 if (ref.isValid) {
                     AppearanceHelper.applySavedAppearance(ref, store, newComponent)
                 }
             }
-        }
+
     }
 
     override fun onComponentRemoved(

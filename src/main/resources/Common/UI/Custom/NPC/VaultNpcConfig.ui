@@ -4,7 +4,7 @@ Group #Group {
   $C.@Container #Containere {
     ScrollbarStyle: $C.@DefaultScrollbarStyle;
     LayoutMode: Top;
-    Anchor: (Width: 450, Height: 430);
+    Anchor: (Width: 450, Height: 650);
 
     #Title {
       LayoutMode: Top;
@@ -16,7 +16,7 @@ Group #Group {
     }
 
     #Content {
-      Anchor: (Width: 450, Height: 370);
+      Anchor: (Width: 450, Height: 600);
       LayoutMode: Top;
 
       Group #DisplayNameGroup {
@@ -83,7 +83,7 @@ Group #Group {
       }
 
       Group #PlayerAppearanceGroup {
-        Anchor: (Width: 400, Height: 75, Top: 15);
+        Anchor: (Width: 400, Height: 200, Top: 15);
         LayoutMode: Top;
 
         $C.@TextButton #CopyAppearanceButton {
@@ -94,6 +94,45 @@ Group #Group {
         $C.@TextButton #FetchSkinByNameButton {
           Anchor: (Width: 200, Height: 25, Top: 10);
           Text: "Fetch Skin From Name";
+        }
+
+        Group #PoseGroup {
+          Anchor: (Width: 400, Height: 32, Top: 15);
+          LayoutMode: Left;
+          Label #PoseLabel {
+            Anchor: (Width: 150, Height: 32, Left: 0);
+            Text: "Idle Pose";
+            Style: (TextColor: #ffffff, VerticalAlignment: Center);
+          }
+          $C.@DropdownBox #PoseDropdown {
+            Anchor: (Width: 240, Height: 32, Right: 0);
+          }
+        }
+
+        Group #MainHandGroup {
+          Anchor: (Width: 400, Height: 25, Top: 15);
+          LayoutMode: Left;
+          Label #MainHandLabel {
+            Anchor: (Width: 150, Height: 25, Left: 0);
+            Text: "Main Hand Item";
+            Style: (TextColor: #ffffff);
+          }
+          $C.@TextField #MainHandField {
+            Anchor: (Width: 240, Height: 25, Right: 0);
+          }
+        }
+
+        Group #OffHandGroup {
+          Anchor: (Width: 400, Height: 25, Top: 15);
+          LayoutMode: Left;
+          Label #OffHandLabel {
+            Anchor: (Width: 150, Height: 25, Left: 0);
+            Text: "Off Hand Item";
+            Style: (TextColor: #ffffff);
+          }
+          $C.@TextField #OffHandField {
+            Anchor: (Width: 240, Height: 25, Right: 0);
+          }
         }
       }
     }

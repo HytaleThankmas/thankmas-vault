@@ -19,9 +19,8 @@ class NpcLoadSystem : HolderSystem<EntityStore>() {
         store: Store<EntityStore>
     ) {
         val config = holder.getComponent(VaultNpcComponent.componentType) ?: return
-        if (config.skinJson.isNotBlank() || config.attachmentsJson.isNotBlank()) {
-            AppearanceHelper.applySavedAppearanceToHolder(holder, config)
-        }
+        AppearanceHelper.applySavedAppearance(holder, config)
+
     }
 
     override fun onEntityRemoved(

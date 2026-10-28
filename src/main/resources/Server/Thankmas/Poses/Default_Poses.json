@@ -1,0 +1,29 @@
+{
+  "Poses": [
+    { "Name": "Sit", "Animation": "Characters/Animations/Flavor/Sit.blockyanim" },
+    { "Name": "SitGround", "Animation": "Characters/Animations/Flavor/Sit_Ground.blockyanim" },
+    { "Name": "Sleep", "Animation": "Characters/Animations/Flavor/Sleep.blockyanim" },
+    { "Name": "Fashion", "Animation": "Characters/Animations/Poses/Fashion.blockyanim" },
+    { "Name": "Fashion2", "Animation": "Characters/Animations/Poses/Fashion2.blockyanim" },
+    { "Name": "Fashion3", "Animation": "Characters/Animations/Poses/Fashion3.blockyanim" },
+    { "Name": "Fashion4", "Animation": "Characters/Animations/Poses/Fashion4.blockyanim" },
+    { "Name": "Guardian", "Animation": "Characters/Animations/Poses/Guardian.blockyanim" },
+    { "Name": "Strong", "Animation": "Characters/Animations/Poses/Strong.blockyanim" },
+    { "Name": "Ninja", "Animation": "Characters/Animations/Poses/Ninja.blockyanim" },
+    { "Name": "Girly", "Animation": "Characters/Animations/Poses/Girly.blockyanim" },
+    { "Name": "BattleAxe", "Animation": "Characters/Animations/Poses/BattleAxe.blockyanim" },
+    { "Name": "Sword", "Animation": "Characters/Animations/Poses/Sword.blockyanim" },
+    { "Name": "Staff", "Animation": "Characters/Animations/Poses/Staff.blockyanim" },
+    { "Name": "Warhammer", "Animation": "Characters/Animations/Poses/Warhammer.blockyanim" },
+    { "Name": "Pickaxe", "Animation": "Characters/Animations/Poses/Pickaxe.blockyanim" },
+    { "Name": "Hero_Bow", "Animation": "Characters/Animations/Poses/Hero/Hero_Bow.blockyanim" },
+    { "Name": "Hero_Staff", "Animation": "Characters/Animations/Poses/Hero/Hero_Staff.blockyanim" },
+    { "Name": "Hero_Sword_Shield", "Animation": "Characters/Animations/Poses/Hero/Hero_Sword_Shield.blockyanim" },
+    { "Name": "Hero_Long_Sword", "Animation": "Characters/Animations/Poses/Hero/Hero_Long_Sword.blockyanim" },
+    { "Name": "Dio_Walk", "Animation": "Characters/Animations/Poses/Dio_Walk.blockyanim" },
+    { "Name": "Jotaro_Walk", "Animation": "Characters/Animations/Poses/Jotaro_Walk.blockyanim" },
+    { "Name": "Book_Read", "Animation": "Characters/Animations/Poses/Book_Read.blockyanim" },
+    { "Name": "Show_Item", "Animation": "Characters/Animations/Poses/Show_Item.blockyanim" },
+    { "Name": "Crouch", "Animation": "Characters/Animations/Default/Crouch.blockyanim" }
+  ]
+}

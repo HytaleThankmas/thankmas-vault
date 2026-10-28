@@ -10,11 +10,14 @@ import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType
 import com.hypixel.hytale.server.core.Message
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage
 import com.hypixel.hytale.server.core.modules.entity.component.DisplayNameComponent
+import com.hypixel.hytale.server.core.ui.DropdownEntryInfo
+import com.hypixel.hytale.server.core.ui.LocalizableString
 import com.hypixel.hytale.server.core.ui.builder.EventData
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder
 import com.hypixel.hytale.server.core.universe.PlayerRef
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
+import dev.rm20.thankmasvault.assets.PoseAsset
 import dev.rm20.thankmasvault.npc.player.AppearanceHelper
 import dev.rm20.thankmasvault.utils.findClosestPointForPlayer
 import dev.rm20.thankmasvault.utils.spawnCameraPointForNpc
@@ -32,6 +35,9 @@ class VaultNpcPage(
         var shopId: String? = null
         var pointId: String? = null
         var dialogueId: String? = null
+        var pose: String? = null
+        var mainHandItem: String? = null
+        var offHandItem: String? = null
         var action: String? = null
 
         companion object {
@@ -58,6 +64,21 @@ class VaultNpcPage(
                     { it.dialogueId ?: "" }
                 ).add()
                 .append(
+                    KeyedCodec("@Pose", Codec.STRING),
+                    { data, s -> data.pose = s },
+                    { it.pose ?: "" }
+                ).add()
+                .append(
+                    KeyedCodec("@MainHandItem", Codec.STRING),
+                    { data, s -> data.mainHandItem = s },
+                    { it.mainHandItem ?: "" }
+                ).add()
+                .append(
+                    KeyedCodec("@OffHandItem", Codec.STRING),
+                    { data, s -> data.offHandItem = s },
+                    { it.offHandItem ?: "" }
+                ).add()
+                .append(
                     KeyedCodec("Action", Codec.STRING),
                     { data, s -> data.action = s },
                     { it.action ?: "" }
@@ -82,18 +103,21 @@ class VaultNpcPage(
             EventData.of("@DisplayName", "#DisplayNameField.Value"),
             false
         )
+
         eventBuilder.addEventBinding(
             CustomUIEventBindingType.ValueChanged,
             "#ShopIdField",
             EventData.of("@ShopId", "#ShopIdField.Value"),
             false
         )
+
         eventBuilder.addEventBinding(
             CustomUIEventBindingType.ValueChanged,
             "#PointIdField",
             EventData.of("@PointId", "#PointIdField.Value"),
             false
         )
+
         eventBuilder.addEventBinding(
             CustomUIEventBindingType.ValueChanged,
             "#DialogueIdField",
@@ -117,6 +141,8 @@ class VaultNpcPage(
 
         val isPlayer = AppearanceHelper.isPlayerNpc(targetEntityRef, store)
         if (isPlayer) {
+            commandBuilder.set("#PlayerAppearanceGroup.Visible", true)
+
             eventBuilder.addEventBinding(
                 CustomUIEventBindingType.Activating,
                 "#CopyAppearanceButton",
@@ -130,6 +156,35 @@ class VaultNpcPage(
                 EventData.of("Action", "fetch_skin_by_name"),
                 false
             )
+
+            eventBuilder.addEventBinding(
+                CustomUIEventBindingType.ValueChanged,
+                "#PoseDropdown",
+                EventData.of("@Pose", "#PoseDropdown.Value"),
+                false
+            )
+
+            eventBuilder.addEventBinding(
+                CustomUIEventBindingType.ValueChanged,
+                "#MainHandField",
+                EventData.of("@MainHandItem", "#MainHandField.Value"),
+                false
+            )
+
+            eventBuilder.addEventBinding(
+                CustomUIEventBindingType.ValueChanged,
+                "#OffHandField",
+                EventData.of("@OffHandItem", "#OffHandField.Value"),
+                false
+            )
+
+            val poses = PoseAsset.getAllPoses()
+            val entries = ArrayList<DropdownEntryInfo>()
+            entries.add(DropdownEntryInfo(LocalizableString.fromString("None"), "None"))
+            for (p in poses) {
+                entries.add(DropdownEntryInfo(LocalizableString.fromString(p.getLabel()), p.name))
+            }
+            commandBuilder.set("#PoseDropdown.Entries", entries)
         } else {
             commandBuilder.set("#PlayerAppearanceGroup.Visible", false)
             commandBuilder.remove("#PlayerAppearanceGroup")
@@ -140,6 +195,11 @@ class VaultNpcPage(
         commandBuilder.set("#ShopIdField.Value", config?.shopId ?: "")
         commandBuilder.set("#PointIdField.Value", config?.pointId ?: "")
         commandBuilder.set("#DialogueIdField.Value", config?.dialogueId ?: "")
+        if (isPlayer) {
+            commandBuilder.set("#PoseDropdown.Value", config?.pose?.ifBlank { "None" } ?: "None")
+            commandBuilder.set("#MainHandField.Value", config?.mainHandItem ?: "")
+            commandBuilder.set("#OffHandField.Value", config?.offHandItem ?: "")
+        }
     }
 
     override fun handleDataEvent(
@@ -176,17 +236,57 @@ class VaultNpcPage(
                 }
             }
         }
+
         if (data.shopId != null) {
             config.shopId = data.shopId!!.trim()
             changed = true
         }
+
         if (data.pointId != null) {
             config.pointId = data.pointId!!.trim()
             changed = true
         }
+
         if (data.dialogueId != null) {
             config.dialogueId = data.dialogueId!!.trim()
             changed = true
+        }
+
+        if (data.pose != null) {
+            val newPose = data.pose!!.trim()
+            if (config.pose != newPose) {
+                config.pose = if (newPose.equals("None", ignoreCase = true)) "" else newPose
+                changed = true
+                store.externalData.world.execute {
+                    if (targetEntityRef.isValid) {
+                        AppearanceHelper.applyPose(targetEntityRef, store, newPose)
+                    }
+                }
+            }
+        }
+        if (data.mainHandItem != null) {
+            val newItem = data.mainHandItem!!.trim()
+            if (config.mainHandItem != newItem) {
+                config.mainHandItem = newItem
+                changed = true
+                store.externalData.world.execute {
+                    if (targetEntityRef.isValid) {
+                        AppearanceHelper.equipItems(targetEntityRef, store, newItem, config.offHandItem)
+                    }
+                }
+            }
+        }
+        if (data.offHandItem != null) {
+            val newItem = data.offHandItem!!.trim()
+            if (config.offHandItem != newItem) {
+                config.offHandItem = newItem
+                changed = true
+                store.externalData.world.execute {
+                    if (targetEntityRef.isValid) {
+                        AppearanceHelper.equipItems(targetEntityRef, store, config.mainHandItem, newItem)
+                    }
+                }
+            }
         }
 
         if (data.action == "spawn_point") {
@@ -243,7 +343,14 @@ class VaultNpcPage(
                     store,
                     saveToConfig = true
                 )
-                playerRef.sendMessage(Message.raw("[VaultNPC] Copied your appearance to the NPC."))
+
+                val updatedConfig = store.getComponent(targetEntityRef, VaultNpcComponent.componentType)
+                val updateCommand = UICommandBuilder()
+                updateCommand.set("#MainHandField.Value", updatedConfig?.mainHandItem ?: "")
+                updateCommand.set("#OffHandField.Value", updatedConfig?.offHandItem ?: "")
+                sendUpdate(updateCommand, false)
+
+                playerRef.sendMessage(Message.raw("[VaultNPC] Copied your appearance and held items to the NPC."))
             } else {
                 playerRef.sendMessage(Message.raw("[VaultNPC] Player reference not found."))
             }
@@ -284,6 +391,13 @@ class VaultNpcPage(
                     store.putComponent(targetEntityRef, VaultNpcComponent.componentType, config)
                 }
             }
+        }
+    }
+
+    override fun onDismiss(ref: Ref<EntityStore>, store: Store<EntityStore>) {
+        super.onDismiss(ref, store)
+        if (targetEntityRef.isValid) {
+            AppearanceHelper.applyPose(targetEntityRef, store)
         }
     }
 

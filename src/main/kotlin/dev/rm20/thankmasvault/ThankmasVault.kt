@@ -7,6 +7,7 @@ import dev.rm20.thankmasvault.registration.CommandRegister
 import dev.rm20.thankmasvault.registration.ComponentRegister
 import dev.rm20.thankmasvault.assets.registerAssets
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent
+import dev.rm20.thankmasvault.npc.player.AppearanceHelper
 import dev.rm20.thankmasvault.npc.player.NpcEmoteHandler
 import dev.rm20.thankmasvault.registration.DialogueActionsRegister
 import dev.rm20.thankmasvault.registration.NpcActionRegister
@@ -20,6 +21,7 @@ class ThankmasVault(init: JavaPluginInit) : JavaPlugin(init) {
 
     override fun start() {
         LOGGER.at(Level.INFO).log("Starting Thankmas vault!")
+        AppearanceHelper.registerPosesToModelAsset()
     }
 
     override fun setup() {

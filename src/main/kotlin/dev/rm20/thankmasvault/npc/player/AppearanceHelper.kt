@@ -6,6 +6,7 @@ import com.google.gson.JsonParser
 import com.hypixel.hytale.component.Holder
 import com.hypixel.hytale.component.Ref
 import com.hypixel.hytale.component.Store
+import com.hypixel.hytale.protocol.AnimationSlot
 import com.hypixel.hytale.protocol.PlayerSkin
 import com.hypixel.hytale.server.core.NameMatching
 import com.hypixel.hytale.server.core.asset.type.model.config.Model
@@ -13,6 +14,11 @@ import com.hypixel.hytale.server.core.asset.type.model.config.ModelAsset
 import com.hypixel.hytale.server.core.asset.type.model.config.ModelAttachment
 import com.hypixel.hytale.server.core.cosmetics.CosmeticsModule
 import com.hypixel.hytale.server.core.cosmetics.PlayerSkinPart
+import com.hypixel.hytale.server.core.entity.AnimationUtils
+import com.hypixel.hytale.server.core.inventory.InventoryComponent
+import com.hypixel.hytale.server.core.inventory.ItemStack
+import com.hypixel.hytale.server.core.inventory.container.SimpleItemContainer
+import com.hypixel.hytale.server.core.modules.entity.component.ActiveAnimationComponent
 import com.hypixel.hytale.server.core.modules.entity.component.ModelComponent
 import com.hypixel.hytale.server.core.modules.entity.component.PersistentModel
 import com.hypixel.hytale.server.core.modules.entity.player.PlayerSkinComponent
@@ -20,14 +26,224 @@ import com.hypixel.hytale.server.core.universe.Universe
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
 import com.hypixel.hytale.server.npc.entities.NPCEntity
 import dev.hardaway.wardrobe.impl.player.PlayerWardrobeComponent
+import dev.rm20.thankmasvault.assets.PoseAsset
 import dev.rm20.thankmasvault.npc.VaultNpcComponent
+import it.unimi.dsi.fastutil.objects.ObjectArrayList
 import java.util.concurrent.CompletableFuture
-import kotlin.collections.iterator
 
-
-object  AppearanceHelper {
+object AppearanceHelper {
 
     private const val DEFAULT_PLAYER_MODEL_NAME = "Player"
+
+    fun createPoseAnimationSet(pose: dev.rm20.thankmasvault.assets.PoseInfo): ModelAsset.AnimationSet {
+        val anim = ModelAsset.Animation(
+            pose.name,
+            pose.animation,
+            1.0f,
+            0.2f,
+            true,
+            1.0f,
+            IntArray(0),
+            null
+        )
+        return ModelAsset.AnimationSet(
+            arrayOf(anim),
+            ModelAsset.AnimationSet.DEFAULT_NEXT_ANIMATION_DELAY
+        )
+    }
+
+    fun registerPosesToModelAsset() {
+        val poses = PoseAsset.getAllPoses()
+        if (poses.isEmpty()) return
+
+        listOf(DEFAULT_PLAYER_MODEL_NAME, "Mannequin").forEach { modelId ->
+            try {
+                val modelAsset = ModelAsset.getAssetMap().getAsset(modelId) ?: return@forEach
+                var animSets = modelAsset.animationSetMap
+                if (animSets !is HashMap) {
+                    animSets = HashMap(animSets)
+                    val field = ModelAsset::class.java.getDeclaredField("animationSetMap")
+                    field.isAccessible = true
+                    field.set(modelAsset, animSets)
+                }
+                for (pose in poses) {
+                    if (pose.name.isNotBlank() && pose.animation.isNotBlank() && !animSets.containsKey(pose.name)) {
+                        animSets[pose.name] = createPoseAnimationSet(pose)
+                    }
+                }
+            } catch (e: Throwable) {
+                dev.rm20.thankmasvault.ThankmasVault.LOGGER.at(java.util.logging.Level.WARNING).withCause(e)
+                    .log("Failed to inject poses into ModelAsset: %s", modelId)
+            }
+        }
+    }
+
+    fun applyPose(ref: Ref<EntityStore>, store: Store<EntityStore>, poseName: String? = null) {
+        if (!ref.isValid) return
+        val targetPose = poseName ?: store.getComponent(ref, VaultNpcComponent.componentType)?.pose
+        if (targetPose.isNullOrBlank() || targetPose.equals("None", ignoreCase = true)) {
+            unposeNpc(ref, store)
+            return
+        }
+        val allPoses = PoseAsset.getAllPoses()
+        val matchedPose = allPoses.firstOrNull { it.name.equals(targetPose, ignoreCase = true) }?.name ?: targetPose
+
+        // Ensure model has this animation registered so AnimationUtils won't log missing animation warning
+        val modelComp = store.getComponent(ref, ModelComponent.getComponentType())
+        val currentModel = modelComp?.model
+        if (currentModel != null && !currentModel.animationSetMap.containsKey(matchedPose)) {
+            registerPosesToModelAsset()
+            val updatedAnimSets = HashMap(currentModel.animationSetMap ?: emptyMap())
+            for (pose in allPoses) {
+                if (pose.name.isNotBlank() && pose.animation.isNotBlank() && !updatedAnimSets.containsKey(pose.name)) {
+                    updatedAnimSets[pose.name] = createPoseAnimationSet(pose)
+                }
+            }
+            val updatedModel = Model(
+                currentModel.modelAssetId ?: DEFAULT_PLAYER_MODEL_NAME,
+                currentModel.scale,
+                currentModel.randomAttachmentIds,
+                currentModel.attachments,
+                currentModel.boundingBox,
+                currentModel.model,
+                currentModel.texture,
+                currentModel.gradientSet,
+                currentModel.gradientId,
+                currentModel.eyeHeight,
+                currentModel.crouchOffset,
+                currentModel.sittingOffset,
+                currentModel.sleepingOffset,
+                updatedAnimSets,
+                currentModel.camera,
+                currentModel.light,
+                currentModel.particles,
+                currentModel.trails,
+                currentModel.physicsValues,
+                currentModel.detailBoxes,
+                currentModel.phobia,
+                currentModel.phobiaModelAssetId
+            )
+            store.putComponent(ref, ModelComponent.getComponentType(), ModelComponent(updatedModel))
+            store.putComponent(ref, PersistentModel.getComponentType(), PersistentModel(updatedModel.toReference()))
+        }
+
+        var activeAnim = store.getComponent(ref, ActiveAnimationComponent.getComponentType())
+        if (activeAnim == null) {
+            activeAnim = ActiveAnimationComponent()
+            store.putComponent(ref, ActiveAnimationComponent.getComponentType(), activeAnim)
+        }
+        activeAnim.setPlayingAnimation(AnimationSlot.Status, matchedPose)
+        AnimationUtils.playAnimation(ref, AnimationSlot.Status, null, matchedPose, true, store)
+    }
+
+    fun unposeNpc(ref: Ref<EntityStore>, store: Store<EntityStore>) {
+        if (!ref.isValid) return
+        val activeAnim = store.getComponent(ref, ActiveAnimationComponent.getComponentType())
+        activeAnim?.setPlayingAnimation(AnimationSlot.Status, null)
+        AnimationUtils.stopAnimation(ref, AnimationSlot.Status, true, store)
+    }
+
+    fun equipItems(
+        npcRef: Ref<EntityStore>,
+        store: Store<EntityStore>,
+        mainHandItem: String?,
+        offHandItem: String?
+    ) {
+        if (!npcRef.isValid) return
+        val cleanMain = mainHandItem?.trim() ?: ""
+        val cleanOff = offHandItem?.trim() ?: ""
+
+        // Main hand
+        var hotbar = store.getComponent(npcRef, InventoryComponent.Hotbar.getComponentType())
+        if (hotbar == null) {
+            hotbar = InventoryComponent.Hotbar(1)
+            store.putComponent(npcRef, InventoryComponent.Hotbar.getComponentType(), hotbar)
+        } else if (hotbar.inventory.capacity < 1) {
+            hotbar.ensureCapacity(1.toShort(), ObjectArrayList())
+        }
+        if (cleanMain.isNotBlank() && !cleanMain.equals("None", ignoreCase = true) && !cleanMain.equals("Empty", ignoreCase = true)) {
+            hotbar.inventory.setItemStackForSlot(0, ItemStack(cleanMain, 1))
+            hotbar.setActiveSlot(0.toByte(), npcRef, store)
+        } else {
+            hotbar.inventory.setItemStackForSlot(0, ItemStack.EMPTY)
+            hotbar.setActiveSlot(InventoryComponent.INACTIVE_SLOT_INDEX.toByte(), npcRef, store)
+        }
+        hotbar.setOutdatedEquipment(true)
+
+        // Off hand
+        var utility = store.getComponent(npcRef, InventoryComponent.Utility.getComponentType())
+        if (utility == null) {
+            utility = InventoryComponent.Utility(1)
+            store.putComponent(npcRef, InventoryComponent.Utility.getComponentType(), utility)
+        } else if (utility.inventory.capacity < 1) {
+            utility.ensureCapacity(1.toShort(), ObjectArrayList())
+        }
+        if (cleanOff.isNotBlank() && !cleanOff.equals("None", ignoreCase = true) && !cleanOff.equals("Empty", ignoreCase = true)) {
+            utility.inventory.setItemStackForSlot(0, ItemStack(cleanOff, 1))
+            utility.setActiveSlot(0.toByte(), npcRef, store)
+        } else {
+            utility.inventory.setItemStackForSlot(0, ItemStack.EMPTY)
+            utility.setActiveSlot(InventoryComponent.INACTIVE_SLOT_INDEX.toByte(), npcRef, store)
+        }
+        utility.setOutdatedEquipment(true)
+    }
+
+    fun equipItemsToNpc(
+        holder: Holder<EntityStore>,
+        mainHandItem: String?,
+        offHandItem: String?
+    ) {
+        val cleanMain = mainHandItem?.trim() ?: ""
+        val cleanOff = offHandItem?.trim() ?: ""
+
+        val hasMain = cleanMain.isNotBlank() && !cleanMain.equals("None", ignoreCase = true) && !cleanMain.equals("Empty", ignoreCase = true)
+        val mainSlot: Byte = if (hasMain) 0.toByte() else InventoryComponent.INACTIVE_SLOT_INDEX.toByte()
+        var hotbar = holder.getComponent(InventoryComponent.Hotbar.getComponentType())
+        if (hotbar == null) {
+            val container = SimpleItemContainer(1)
+            if (hasMain) {
+                container.setItemStackForSlot(0, ItemStack(cleanMain, 1))
+            }
+            hotbar = InventoryComponent.Hotbar(container, mainSlot)
+            holder.putComponent(InventoryComponent.Hotbar.getComponentType(), hotbar)
+        } else {
+            if (hotbar.inventory.capacity < 1) {
+                hotbar.ensureCapacity(1.toShort(), ObjectArrayList())
+            }
+            if (hasMain) {
+                hotbar.inventory.setItemStackForSlot(0, ItemStack(cleanMain, 1))
+            } else {
+                hotbar.inventory.setItemStackForSlot(0, ItemStack.EMPTY)
+            }
+            hotbar = InventoryComponent.Hotbar(hotbar.inventory, mainSlot)
+            holder.putComponent(InventoryComponent.Hotbar.getComponentType(), hotbar)
+        }
+        hotbar.setOutdatedEquipment(true)
+
+        val hasOff = cleanOff.isNotBlank() && !cleanOff.equals("None", ignoreCase = true) && !cleanOff.equals("Empty", ignoreCase = true)
+        val offSlot: Byte = if (hasOff) 0.toByte() else InventoryComponent.INACTIVE_SLOT_INDEX.toByte()
+        var utility = holder.getComponent(InventoryComponent.Utility.getComponentType())
+        if (utility == null) {
+            val container = SimpleItemContainer(1)
+            if (hasOff) {
+                container.setItemStackForSlot(0, ItemStack(cleanOff, 1))
+            }
+            utility = InventoryComponent.Utility(container, offSlot)
+            holder.putComponent(InventoryComponent.Utility.getComponentType(), utility)
+        } else {
+            if (utility.inventory.capacity < 1) {
+                utility.ensureCapacity(1.toShort(), ObjectArrayList())
+            }
+            if (hasOff) {
+                utility.inventory.setItemStackForSlot(0, ItemStack(cleanOff, 1))
+            } else {
+                utility.inventory.setItemStackForSlot(0, ItemStack.EMPTY)
+            }
+            utility = InventoryComponent.Utility(utility.inventory, offSlot)
+            holder.putComponent(InventoryComponent.Utility.getComponentType(), utility)
+        }
+        utility.setOutdatedEquipment(true)
+    }
 
     fun isPlayerNpc(ref: Ref<EntityStore>, store: Store<EntityStore>): Boolean {
         if (!ref.isValid) return false
@@ -88,11 +304,11 @@ object  AppearanceHelper {
                 if (variantId != null) {
                     val variant = skinPart.variants[variantId] ?: return false
                     variant.textures?.containsKey(texture) == true ||
-                        variant.textures?.keys?.any { it.equals(texture, ignoreCase = true) } == true
+                            variant.textures?.keys?.any { it.equals(texture, ignoreCase = true) } == true
                 } else false
             } else {
                 skinPart.textures?.containsKey(texture) == true ||
-                    skinPart.textures?.keys?.any { it.equals(texture, ignoreCase = true) } == true
+                        skinPart.textures?.keys?.any { it.equals(texture, ignoreCase = true) } == true
             }
         }
 
@@ -123,8 +339,8 @@ object  AppearanceHelper {
             } else {
                 map.keys.firstOrNull {
                     it.equals(partName, ignoreCase = true) ||
-                        it.equals(partName.replace(' ', '_'), ignoreCase = true) ||
-                        it.replace("[_ ]".toRegex(), "").equals(partName.replace("[_ ]".toRegex(), ""), ignoreCase = true)
+                            it.equals(partName.replace(' ', '_'), ignoreCase = true) ||
+                            it.replace("[_ ]".toRegex(), "").equals(partName.replace("[_ ]".toRegex(), ""), ignoreCase = true)
                 }
             } ?: return null
 
@@ -185,8 +401,8 @@ object  AppearanceHelper {
                 if (map.containsKey(id)) return id
                 val matched = map.keys.firstOrNull {
                     it.equals(id, ignoreCase = true) ||
-                        it.equals(id.replace(' ', '_'), ignoreCase = true) ||
-                        it.replace("[_ ]".toRegex(), "").equals(id.replace("[_ ]".toRegex(), ""), ignoreCase = true)
+                            it.equals(id.replace(' ', '_'), ignoreCase = true) ||
+                            it.replace("[_ ]".toRegex(), "").equals(id.replace("[_ ]".toRegex(), ""), ignoreCase = true)
                 }
                 if (matched != null) return matched
             }
@@ -340,12 +556,15 @@ object  AppearanceHelper {
         return try {
             val root = JsonParser.parseString(jsonStr).asJsonObject
             val scale = if (root.has("scale") && !root.get("scale").isJsonNull) root.get("scale").asFloat else 1.0f
-            val modelAssetId = if (root.has("modelAssetId") && !root.get("modelAssetId").isJsonNull) root.get("modelAssetId").asString else null
+            val modelAssetId =
+                if (root.has("modelAssetId") && !root.get("modelAssetId").isJsonNull) root.get("modelAssetId").asString else null
             val modelPath = if (root.has("model") && !root.get("model").isJsonNull) root.get("model").asString else null
-            val texture = if (root.has("texture") && !root.get("texture").isJsonNull) root.get("texture").asString else null
-            val gradientSet = if (root.has("gradientSet") && !root.get("gradientSet").isJsonNull) root.get("gradientSet").asString else null
-            val gradientId = if (root.has("gradientId") && !root.get("gradientId").isJsonNull) root.get("gradientId").asString else null
-
+            val texture =
+                if (root.has("texture") && !root.get("texture").isJsonNull) root.get("texture").asString else null
+            val gradientSet =
+                if (root.has("gradientSet") && !root.get("gradientSet").isJsonNull) root.get("gradientSet").asString else null
+            val gradientId =
+                if (root.has("gradientId") && !root.get("gradientId").isJsonNull) root.get("gradientId").asString else null
             val randomMap = if (root.has("randomAttachments") && root.get("randomAttachments").isJsonObject) {
                 val obj = root.getAsJsonObject("randomAttachments")
                 obj.entrySet().associate { it.key to it.value.asString }
@@ -357,12 +576,17 @@ object  AppearanceHelper {
                     if (!elem.isJsonObject) null
                     else {
                         val obj = elem.asJsonObject
-                        val m = if (obj.has("model") && !obj.get("model").isJsonNull) obj.get("model").asString else null
-                        val t = if (obj.has("texture") && !obj.get("texture").isJsonNull) obj.get("texture").asString else null
-                        val gs = if (obj.has("gradientSet") && !obj.get("gradientSet").isJsonNull) obj.get("gradientSet").asString else null
-                        val gi = if (obj.has("gradientId") && !obj.get("gradientId").isJsonNull) obj.get("gradientId").asString else null
-                        val w = if (obj.has("weight") && !obj.get("weight").isJsonNull) obj.get("weight").asDouble else 1.0
-                        ModelAttachment(m, t, gs, gi, w)
+                        val model =
+                            if (obj.has("model") && !obj.get("model").isJsonNull) obj.get("model").asString else null
+                        val texture =
+                            if (obj.has("texture") && !obj.get("texture").isJsonNull) obj.get("texture").asString else null
+                        val gradientSet =
+                            if (obj.has("gradientSet") && !obj.get("gradientSet").isJsonNull) obj.get("gradientSet").asString else null
+                        val gradientId =
+                            if (obj.has("gradientId") && !obj.get("gradientId").isJsonNull) obj.get("gradientId").asString else null
+                        val weight =
+                            if (obj.has("weight") && !obj.get("weight").isJsonNull) obj.get("weight").asDouble else 1.0
+                        ModelAttachment(model, texture, gradientSet, gradientId, weight)
                     }
                 }.toTypedArray()
             } else null
@@ -402,7 +626,11 @@ object  AppearanceHelper {
             val modelAsset = ModelAsset.getAssetMap().getAsset(assetId)
                 ?: ModelAsset.getAssetMap().getAsset(DEFAULT_PLAYER_MODEL_NAME)
                 ?: return null
-            Model.createScaledModel(modelAsset, if (savedData.scale > 0f) savedData.scale else 1.0f, savedData.randomAttachments)
+            Model.createScaledModel(
+                modelAsset,
+                if (savedData.scale > 0f) savedData.scale else 1.0f,
+                savedData.randomAttachments
+            )
         }
 
         // Attachments: if custom attachments were saved (e.g. from Wardrobe or custom models), use them;
@@ -421,6 +649,13 @@ object  AppearanceHelper {
         val finalAssetId = savedData.modelAssetId ?: baseModel.modelAssetId ?: DEFAULT_PLAYER_MODEL_NAME
         val finalScale = if (savedData.scale > 0f) savedData.scale else baseModel.scale
 
+        val finalAnimationSets = HashMap(baseModel.animationSetMap ?: emptyMap())
+        for (pose in PoseAsset.getAllPoses()) {
+            if (pose.name.isNotBlank() && pose.animation.isNotBlank() && !finalAnimationSets.containsKey(pose.name)) {
+                finalAnimationSets[pose.name] = createPoseAnimationSet(pose)
+            }
+        }
+
         return Model(
             finalAssetId,
             finalScale,
@@ -435,7 +670,7 @@ object  AppearanceHelper {
             baseModel.crouchOffset,
             baseModel.sittingOffset,
             baseModel.sleepingOffset,
-            baseModel.animationSetMap,
+            finalAnimationSets,
             baseModel.camera,
             baseModel.light,
             baseModel.particles,
@@ -471,6 +706,10 @@ object  AppearanceHelper {
             return false
         }
 
+        val mainHand = InventoryComponent.getItemInHand(playerStore, playerRef)?.itemId ?: ""
+        val utilityComp = playerStore.getComponent(playerRef, InventoryComponent.Utility.getComponentType())
+        val offHand = utilityComp?.activeItem?.itemId ?: ""
+
         store.externalData.world.execute {
             if (!npcRef.isValid) return@execute
 
@@ -500,6 +739,8 @@ object  AppearanceHelper {
                 }
             }
 
+            equipItems(npcRef, store, mainHand, offHand)
+
             if (saveToConfig) {
                 var config = store.getComponent(npcRef, VaultNpcComponent.componentType)
                 if (config == null) {
@@ -511,6 +752,8 @@ object  AppearanceHelper {
                 if (modelToApply != null) {
                     config.attachmentsJson = modelAttachmentsToJson(modelToApply)
                 }
+                config.mainHandItem = mainHand
+                config.offHandItem = offHand
                 store.putComponent(npcRef, VaultNpcComponent.componentType, config)
             }
         }
@@ -607,10 +850,14 @@ object  AppearanceHelper {
                 store.putComponent(npcRef, ModelComponent.getComponentType(), ModelComponent(finalModel))
                 store.putComponent(npcRef, PersistentModel.getComponentType(), PersistentModel(finalModel.toReference()))
             }
+            if (config.pose.isNotBlank()) {
+                applyPose(npcRef, store, config.pose)
+            }
+            equipItems(npcRef, store, config.mainHandItem, config.offHandItem)
         }
     }
 
-    fun applySavedAppearanceToHolder(
+    fun applySavedAppearance(
         holder: Holder<EntityStore>,
         config: VaultNpcComponent
     ) {
@@ -629,6 +876,19 @@ object  AppearanceHelper {
         if (finalModel != null) {
             holder.putComponent(ModelComponent.getComponentType(), ModelComponent(finalModel))
             holder.putComponent(PersistentModel.getComponentType(), PersistentModel(finalModel.toReference()))
+        }
+        equipItemsToNpc(holder, config.mainHandItem, config.offHandItem)
+
+        val pose = config.pose
+        if (pose.isNotBlank() && !pose.equals("None", ignoreCase = true)) {
+            val allPoses = PoseAsset.getAllPoses()
+            val matchedPose = allPoses.firstOrNull { it.name.equals(pose, ignoreCase = true) }?.name ?: pose
+            var activeAnim = holder.getComponent(ActiveAnimationComponent.getComponentType())
+            if (activeAnim == null) {
+                activeAnim = ActiveAnimationComponent()
+                holder.putComponent(ActiveAnimationComponent.getComponentType(), activeAnim)
+            }
+            activeAnim.setPlayingAnimation(AnimationSlot.Status, matchedPose)
         }
     }
 }

@@ -21,11 +21,9 @@ class NpcStoreSystem : RefSystem<EntityStore>() {
         commandBuffer: CommandBuffer<EntityStore>
     ) {
         val config = store.getComponent(ref, VaultNpcComponent.componentType) ?: return
-        if (config.skinJson.isNotBlank() || config.attachmentsJson.isNotBlank()) {
-            store.externalData.world.execute {
-                if (ref.isValid) {
-                    AppearanceHelper.applySavedAppearance(ref, store, config)
-                }
+        store.externalData.world.execute {
+            if (ref.isValid) {
+                AppearanceHelper.applySavedAppearance(ref, store, config)
             }
         }
     }
