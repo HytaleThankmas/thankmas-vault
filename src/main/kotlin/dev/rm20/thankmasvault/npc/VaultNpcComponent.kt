@@ -12,6 +12,7 @@ class VaultNpcComponent : Component<EntityStore> {
     var shopId: String = ""
     var pointId: String = ""
     var dialogueId: String = ""
+    var model: String = ""
     var skinJson: String = ""
     var attachmentsJson: String = ""
     var pose: String = ""
@@ -24,6 +25,7 @@ class VaultNpcComponent : Component<EntityStore> {
         copy.shopId = this.shopId
         copy.pointId = this.pointId
         copy.dialogueId = this.dialogueId
+        copy.model = this.model
         copy.skinJson = this.skinJson
         copy.attachmentsJson = this.attachmentsJson
         copy.pose = this.pose

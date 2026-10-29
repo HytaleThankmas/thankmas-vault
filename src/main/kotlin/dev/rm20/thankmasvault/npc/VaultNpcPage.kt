@@ -19,6 +19,7 @@ import com.hypixel.hytale.server.core.universe.PlayerRef
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
 import dev.rm20.thankmasvault.assets.PoseAsset
 import dev.rm20.thankmasvault.npc.player.AppearanceHelper
+import dev.rm20.thankmasvault.npc.player.PlayerNpcComponent
 import dev.rm20.thankmasvault.utils.findClosestPointForPlayer
 import dev.rm20.thankmasvault.utils.spawnCameraPointForNpc
 import javax.annotation.Nonnull
@@ -33,6 +34,7 @@ class VaultNpcPage(
     class BindingData {
         var displayName: String? = null
         var shopId: String? = null
+        var model: String? = null
         var pointId: String? = null
         var dialogueId: String? = null
         var pose: String? = null
@@ -52,6 +54,11 @@ class VaultNpcPage(
                     KeyedCodec("@ShopId", Codec.STRING),
                     { data, s -> data.shopId = s },
                     { it.shopId ?: "" }
+                ).add()
+                .append(
+                    KeyedCodec("@Model", Codec.STRING),
+                    { data, s -> data.model = s },
+                    { it.model ?: "" }
                 ).add()
                 .append(
                     KeyedCodec("@PointId", Codec.STRING),
@@ -108,6 +115,13 @@ class VaultNpcPage(
             CustomUIEventBindingType.ValueChanged,
             "#ShopIdField",
             EventData.of("@ShopId", "#ShopIdField.Value"),
+            false
+        )
+
+        eventBuilder.addEventBinding(
+            CustomUIEventBindingType.ValueChanged,
+            "#ModelField",
+            EventData.of("@Model", "#ModelField.Value"),
             false
         )
 
@@ -193,6 +207,7 @@ class VaultNpcPage(
         val config = store.getComponent(targetEntityRef, VaultNpcComponent.componentType)
         commandBuilder.set("#DisplayNameField.Value", config?.displayName ?: "")
         commandBuilder.set("#ShopIdField.Value", config?.shopId ?: "")
+        commandBuilder.set("#ModelField.Value", config?.model ?: "")
         commandBuilder.set("#PointIdField.Value", config?.pointId ?: "")
         commandBuilder.set("#DialogueIdField.Value", config?.dialogueId ?: "")
         if (isPlayer) {
@@ -242,6 +257,31 @@ class VaultNpcPage(
             changed = true
         }
 
+        if (data.model != null) {
+            val newModel = data.model!!.trim()
+            if (config.model != newModel) {
+                config.model = newModel
+                changed = true
+                store.externalData.world.execute {
+                    if (targetEntityRef.isValid) {
+                        if (newModel.isNotBlank()) {
+                            val applied = AppearanceHelper.applyModelToNpc(targetEntityRef, store, newModel)
+                            if (applied) {
+                                playerRef.sendMessage(Message.raw("[VaultNPC] Changed model to '$newModel'."))
+                            } else {
+                                playerRef.sendMessage(Message.raw("[VaultNPC] Warning: Model '$newModel' not found in asset map."))
+                            }
+                        } else {
+                            if (AppearanceHelper.isPlayerNpc(targetEntityRef, store)) {
+                                AppearanceHelper.applySavedAppearance(targetEntityRef, store, config)
+                            }
+                            playerRef.sendMessage(Message.raw("[VaultNPC] Reset to default model."))
+                        }
+                    }
+                }
+            }
+        }
+
         if (data.pointId != null) {
             config.pointId = data.pointId!!.trim()
             changed = true
@@ -252,38 +292,63 @@ class VaultNpcPage(
             changed = true
         }
 
-        if (data.pose != null) {
-            val newPose = data.pose!!.trim()
-            if (config.pose != newPose) {
-                config.pose = if (newPose.equals("None", ignoreCase = true)) "" else newPose
-                changed = true
-                store.externalData.world.execute {
-                    if (targetEntityRef.isValid) {
-                        AppearanceHelper.applyPose(targetEntityRef, store, newPose)
+        val isPlayer = AppearanceHelper.isPlayerNpc(targetEntityRef, store)
+        if (isPlayer) {
+            var playerNpcComp = store.getComponent(targetEntityRef, PlayerNpcComponent.componentType)
+            var playerCompChanged = false
+            if (playerNpcComp == null) {
+                playerNpcComp = PlayerNpcComponent()
+                playerCompChanged = true
+            }
+
+            if (data.pose != null) {
+                val newPose = data.pose!!.trim()
+                val targetPose = if (newPose.equals("None", ignoreCase = true)) "" else newPose
+                if (config.pose != targetPose) {
+                    config.pose = targetPose
+                    playerNpcComp.pose = targetPose
+                    changed = true
+                    playerCompChanged = true
+                    store.externalData.world.execute {
+                        if (targetEntityRef.isValid) {
+                            AppearanceHelper.applyPose(targetEntityRef, store, targetPose)
+                        }
                     }
                 }
             }
-        }
-        if (data.mainHandItem != null) {
-            val newItem = data.mainHandItem!!.trim()
-            if (config.mainHandItem != newItem) {
-                config.mainHandItem = newItem
-                changed = true
-                store.externalData.world.execute {
-                    if (targetEntityRef.isValid) {
-                        AppearanceHelper.equipItems(targetEntityRef, store, newItem, config.offHandItem)
+            if (data.mainHandItem != null) {
+                val newItem = data.mainHandItem!!.trim()
+                if (config.mainHandItem != newItem) {
+                    config.mainHandItem = newItem
+                    playerNpcComp.mainHandItem = newItem
+                    changed = true
+                    playerCompChanged = true
+                    store.externalData.world.execute {
+                        if (targetEntityRef.isValid) {
+                            AppearanceHelper.equipItems(targetEntityRef, store, newItem, config.offHandItem)
+                        }
                     }
                 }
             }
-        }
-        if (data.offHandItem != null) {
-            val newItem = data.offHandItem!!.trim()
-            if (config.offHandItem != newItem) {
-                config.offHandItem = newItem
-                changed = true
+            if (data.offHandItem != null) {
+                val newItem = data.offHandItem!!.trim()
+                if (config.offHandItem != newItem) {
+                    config.offHandItem = newItem
+                    playerNpcComp.offHandItem = newItem
+                    changed = true
+                    playerCompChanged = true
+                    store.externalData.world.execute {
+                        if (targetEntityRef.isValid) {
+                            AppearanceHelper.equipItems(targetEntityRef, store, config.mainHandItem, newItem)
+                        }
+                    }
+                }
+            }
+
+            if (playerCompChanged) {
                 store.externalData.world.execute {
                     if (targetEntityRef.isValid) {
-                        AppearanceHelper.equipItems(targetEntityRef, store, config.mainHandItem, newItem)
+                        store.putComponent(targetEntityRef, PlayerNpcComponent.componentType, playerNpcComp)
                     }
                 }
             }
@@ -396,7 +461,7 @@ class VaultNpcPage(
 
     override fun onDismiss(ref: Ref<EntityStore>, store: Store<EntityStore>) {
         super.onDismiss(ref, store)
-        if (targetEntityRef.isValid) {
+        if (targetEntityRef.isValid && AppearanceHelper.isPlayerNpc(targetEntityRef, store)) {
             AppearanceHelper.applyPose(targetEntityRef, store)
         }
     }

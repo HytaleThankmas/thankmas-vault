@@ -9,10 +9,9 @@ object CommandRegister {
         val commandRegistry = plugin.commandRegistry
         commandRegistry.registerCommand(BalanceCommand())
         commandRegistry.registerCommand(AdminEconomyCommand())
-        commandRegistry.registerCommand(ShopCommand())
         commandRegistry.registerCommand(AttachShopCommand())
         commandRegistry.registerCommand(RemoveShopCommand())
         commandRegistry.registerCommand(SpawnPlayerNpcCommand())
-        commandRegistry.registerCommand(testui())
+        commandRegistry.registerCommand(SetNpcModelCommand())
     }
 }

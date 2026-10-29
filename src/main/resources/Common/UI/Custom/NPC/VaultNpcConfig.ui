@@ -59,6 +59,19 @@ Group #Group {
         }
       }
 
+      Group #ModelGroup {
+        Anchor: (Width: 400, Height: 25, Top: 15);
+        LayoutMode: Left;
+        Label #ModelLabel {
+          Anchor: (Width: 150, Height: 25, Left: 0);
+          Text: "Model";
+          Style: (TextColor: #ffffff);
+        }
+        $C.@TextField #ModelField {
+          Anchor: (Width: 240, Height: 25, Right: 0);
+        }
+      }
+      
       Group #PointIdGroup {
         Anchor: (Width: 400, Height: 25, Top: 15);
         LayoutMode: Left;

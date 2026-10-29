@@ -23,6 +23,7 @@ import com.hypixel.hytale.server.core.universe.world.World
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
 import com.hypixel.hytale.server.npc.NPCPlugin
 import dev.rm20.thankmasvault.npc.player.AppearanceHelper
+import dev.rm20.thankmasvault.npc.player.PlayerNpcComponent
 import dev.rm20.thankmasvault.npc.VaultNpcComponent
 import javax.annotation.Nonnull
 
@@ -101,23 +102,20 @@ class SpawnPlayerNpcCommand : AbstractPlayerCommand(
 
         // Determine Role
         val npcPlugin = NPCPlugin.get()
-        val requestedRole = "Shops/Player_NPC"
-
-        var roleIndex = npcPlugin.getIndex(requestedRole)
+        var roleIndex = npcPlugin.getIndex("Player_NPC")
         if (roleIndex == AssetMapWithIndexes.NOT_FOUND) {
-            roleIndex = npcPlugin.getIndex("Player_NPC")
-        }
-        if (roleIndex == AssetMapWithIndexes.NOT_FOUND) {
-            roleIndex = npcPlugin.getIndex("Shops/Elf_NPC")
+            roleIndex = npcPlugin.getIndex("Shops/Player_NPC")
         }
         if (roleIndex == AssetMapWithIndexes.NOT_FOUND) {
             roleIndex = npcPlugin.getIndex("Elf_NPC")
         }
         if (roleIndex == AssetMapWithIndexes.NOT_FOUND) {
+            roleIndex = npcPlugin.getIndex("Shops/Elf_NPC")
+        }
+        if (roleIndex == AssetMapWithIndexes.NOT_FOUND) {
             context.sendMessage(Message.raw("Could not find a valid NPC role for spawning."))
             return
         }
-
 
         val npcPair = npcPlugin.spawnEntity(
             store,
@@ -129,7 +127,6 @@ class SpawnPlayerNpcCommand : AbstractPlayerCommand(
             entityStore.externalData.world.execute {
                 if (!npcEntityRef.isValid) return@execute
 
-
                 // Copy appearance
                 AppearanceHelper.copyPlayerAppearanceToNpc(
                     sourceRef,
@@ -137,7 +134,6 @@ class SpawnPlayerNpcCommand : AbstractPlayerCommand(
                     entityStore,
                     saveToConfig = false
                 )
-
 
                 var config = entityStore.getComponent(npcEntityRef, VaultNpcComponent.componentType)
                 if (config == null) {
@@ -154,6 +150,18 @@ class SpawnPlayerNpcCommand : AbstractPlayerCommand(
 
                 entityStore.putComponent(npcEntityRef, VaultNpcComponent.componentType, config)
 
+                var playerNpcComp = entityStore.getComponent(npcEntityRef, PlayerNpcComponent.componentType)
+                if (playerNpcComp == null) {
+                    playerNpcComp = PlayerNpcComponent()
+                }
+                if (playerSkin != null) {
+                    playerNpcComp.skinJson = AppearanceHelper.playerSkinToJson(playerSkin)
+                }
+                if (modelToSave != null) {
+                    playerNpcComp.attachmentsJson = AppearanceHelper.modelAttachmentsToJson(modelToSave)
+                }
+                entityStore.putComponent(npcEntityRef, PlayerNpcComponent.componentType, playerNpcComp)
+
                 // if user is offline get skin from hytags
                 if (targetUsername != null && sourceRef == ref && !targetUsername.equals(playerRef.username, ignoreCase = true)) {
                     AppearanceHelper.copyPlayerAppearanceByUsername(
@@ -166,9 +174,7 @@ class SpawnPlayerNpcCommand : AbstractPlayerCommand(
                             playerRef.sendMessage(
                                 Message.raw("[VaultNPC] Updated '$finalName' skin")
                             )
-                        }
-                        else
-                        {
+                        } else {
                             playerRef.sendMessage(
                                 Message.raw("[VaultNPC] Failed to update '$finalName' skin")
                             )

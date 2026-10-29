@@ -8,6 +8,7 @@ import com.hypixel.hytale.component.Ref
 import com.hypixel.hytale.component.Store
 import com.hypixel.hytale.protocol.AnimationSlot
 import com.hypixel.hytale.protocol.PlayerSkin
+import com.hypixel.hytale.protocol.Rangef
 import com.hypixel.hytale.server.core.NameMatching
 import com.hypixel.hytale.server.core.asset.type.model.config.Model
 import com.hypixel.hytale.server.core.asset.type.model.config.ModelAsset
@@ -48,7 +49,7 @@ object AppearanceHelper {
         )
         return ModelAsset.AnimationSet(
             arrayOf(anim),
-            ModelAsset.AnimationSet.DEFAULT_NEXT_ANIMATION_DELAY
+            Rangef(0f, 0f)
         )
     }
 
@@ -67,7 +68,7 @@ object AppearanceHelper {
                     field.set(modelAsset, animSets)
                 }
                 for (pose in poses) {
-                    if (pose.name.isNotBlank() && pose.animation.isNotBlank() && !animSets.containsKey(pose.name)) {
+                    if (pose.name.isNotBlank() && pose.animation.isNotBlank()) {
                         animSets[pose.name] = createPoseAnimationSet(pose)
                     }
                 }
@@ -80,7 +81,9 @@ object AppearanceHelper {
 
     fun applyPose(ref: Ref<EntityStore>, store: Store<EntityStore>, poseName: String? = null) {
         if (!ref.isValid) return
-        val targetPose = poseName ?: store.getComponent(ref, VaultNpcComponent.componentType)?.pose
+        val targetPose = poseName
+            ?: store.getComponent(ref, PlayerNpcComponent.componentType)?.pose?.takeIf { it.isNotBlank() }
+            ?: store.getComponent(ref, VaultNpcComponent.componentType)?.pose
         if (targetPose.isNullOrBlank() || targetPose.equals("None", ignoreCase = true)) {
             unposeNpc(ref, store)
             return
@@ -88,43 +91,47 @@ object AppearanceHelper {
         val allPoses = PoseAsset.getAllPoses()
         val matchedPose = allPoses.firstOrNull { it.name.equals(targetPose, ignoreCase = true) }?.name ?: targetPose
 
-        // Ensure model has this animation registered so AnimationUtils won't log missing animation warning
+        // Ensure model has this animation registered with Rangef(0f, 0f) so it loops continuously
         val modelComp = store.getComponent(ref, ModelComponent.getComponentType())
         val currentModel = modelComp?.model
-        if (currentModel != null && !currentModel.animationSetMap.containsKey(matchedPose)) {
-            registerPosesToModelAsset()
-            val updatedAnimSets = HashMap(currentModel.animationSetMap ?: emptyMap())
-            for (pose in allPoses) {
-                if (pose.name.isNotBlank() && pose.animation.isNotBlank() && !updatedAnimSets.containsKey(pose.name)) {
-                    updatedAnimSets[pose.name] = createPoseAnimationSet(pose)
+        if (currentModel != null) {
+            val animSet = currentModel.animationSetMap?.get(matchedPose)
+            val needsUpdate = animSet == null || (animSet.nextAnimationDelay?.let { it.min != 0f || it.max != 0f } ?: false)
+            if (needsUpdate) {
+                registerPosesToModelAsset()
+                val updatedAnimSets = HashMap(currentModel.animationSetMap ?: emptyMap())
+                for (pose in allPoses) {
+                    if (pose.name.isNotBlank() && pose.animation.isNotBlank()) {
+                        updatedAnimSets[pose.name] = createPoseAnimationSet(pose)
+                    }
                 }
+                val updatedModel = Model(
+                    currentModel.modelAssetId ?: DEFAULT_PLAYER_MODEL_NAME,
+                    currentModel.scale,
+                    currentModel.randomAttachmentIds,
+                    currentModel.attachments,
+                    currentModel.boundingBox,
+                    currentModel.model,
+                    currentModel.texture,
+                    currentModel.gradientSet,
+                    currentModel.gradientId,
+                    currentModel.eyeHeight,
+                    currentModel.crouchOffset,
+                    currentModel.sittingOffset,
+                    currentModel.sleepingOffset,
+                    updatedAnimSets,
+                    currentModel.camera,
+                    currentModel.light,
+                    currentModel.particles,
+                    currentModel.trails,
+                    currentModel.physicsValues,
+                    currentModel.detailBoxes,
+                    currentModel.phobia,
+                    currentModel.phobiaModelAssetId
+                )
+                store.putComponent(ref, ModelComponent.getComponentType(), ModelComponent(updatedModel))
+                store.putComponent(ref, PersistentModel.getComponentType(), PersistentModel(updatedModel.toReference()))
             }
-            val updatedModel = Model(
-                currentModel.modelAssetId ?: DEFAULT_PLAYER_MODEL_NAME,
-                currentModel.scale,
-                currentModel.randomAttachmentIds,
-                currentModel.attachments,
-                currentModel.boundingBox,
-                currentModel.model,
-                currentModel.texture,
-                currentModel.gradientSet,
-                currentModel.gradientId,
-                currentModel.eyeHeight,
-                currentModel.crouchOffset,
-                currentModel.sittingOffset,
-                currentModel.sleepingOffset,
-                updatedAnimSets,
-                currentModel.camera,
-                currentModel.light,
-                currentModel.particles,
-                currentModel.trails,
-                currentModel.physicsValues,
-                currentModel.detailBoxes,
-                currentModel.phobia,
-                currentModel.phobiaModelAssetId
-            )
-            store.putComponent(ref, ModelComponent.getComponentType(), ModelComponent(updatedModel))
-            store.putComponent(ref, PersistentModel.getComponentType(), PersistentModel(updatedModel.toReference()))
         }
 
         var activeAnim = store.getComponent(ref, ActiveAnimationComponent.getComponentType())
@@ -133,6 +140,12 @@ object AppearanceHelper {
             store.putComponent(ref, ActiveAnimationComponent.getComponentType(), activeAnim)
         }
         activeAnim.setPlayingAnimation(AnimationSlot.Status, matchedPose)
+        try {
+            val field = ActiveAnimationComponent::class.java.getDeclaredField("isNetworkOutdated")
+            field.isAccessible = true
+            field.setBoolean(activeAnim, true)
+        } catch (_: Throwable) {}
+
         AnimationUtils.playAnimation(ref, AnimationSlot.Status, null, matchedPose, true, store)
     }
 
@@ -140,6 +153,12 @@ object AppearanceHelper {
         if (!ref.isValid) return
         val activeAnim = store.getComponent(ref, ActiveAnimationComponent.getComponentType())
         activeAnim?.setPlayingAnimation(AnimationSlot.Status, null)
+        try {
+            val field = ActiveAnimationComponent::class.java.getDeclaredField("isNetworkOutdated")
+            field.isAccessible = true
+            field.setBoolean(activeAnim, true)
+        } catch (_: Throwable) {}
+
         AnimationUtils.stopAnimation(ref, AnimationSlot.Status, true, store)
     }
 
@@ -248,6 +267,9 @@ object AppearanceHelper {
     fun isPlayerNpc(ref: Ref<EntityStore>, store: Store<EntityStore>): Boolean {
         if (!ref.isValid) return false
 
+        if (store.getComponent(ref, PlayerNpcComponent.componentType) != null) {
+            return true
+        }
         if (store.getComponent(ref, PlayerSkinComponent.getComponentType()) != null) {
             return true
         }
@@ -280,6 +302,74 @@ object AppearanceHelper {
         }
 
         return false
+    }
+
+    fun isPlayerNpc(holder: Holder<EntityStore>): Boolean {
+        if (holder.getComponent(PlayerNpcComponent.componentType) != null) {
+            return true
+        }
+        if (holder.getComponent(PlayerSkinComponent.getComponentType()) != null) {
+            return true
+        }
+        val vaultComp = holder.getComponent(VaultNpcComponent.componentType)
+        if (vaultComp != null && vaultComp.skinJson.isNotBlank()) {
+            return true
+        }
+        val modelComp = holder.getComponent(ModelComponent.getComponentType())
+        val assetId = modelComp?.model?.modelAssetId
+        if (assetId != null && (assetId.equals(DEFAULT_PLAYER_MODEL_NAME, ignoreCase = true) || assetId.contains("Player", ignoreCase = true))) {
+            return true
+        }
+
+        val npcComponentType = NPCEntity.getComponentType()
+        if (npcComponentType != null) {
+            val npcEntity = holder.getComponent(npcComponentType)
+            if (npcEntity != null) {
+                val roleName = npcEntity.roleName
+                if (roleName != null && roleName.contains("Player", ignoreCase = true)) {
+                    return true
+                }
+                val role = npcEntity.role
+                if (role != null) {
+                    val appearance = role.appearanceName
+                    if (appearance != null && appearance.contains("Player", ignoreCase = true)) {
+                        return true
+                    }
+                }
+            }
+        }
+
+        return false
+    }
+
+    fun applyModelToNpc(
+        npcRef: Ref<EntityStore>,
+        store: Store<EntityStore>,
+        modelAssetId: String,
+        scale: Float = 1.0f
+    ): Boolean {
+        if (!npcRef.isValid) return false
+        val cleanModel = modelAssetId.trim()
+        if (cleanModel.isBlank()) return false
+        val asset = ModelAsset.getAssetMap().getAsset(cleanModel) ?: return false
+        val model = Model.createScaledModel(asset, if (scale > 0f) scale else 1.0f, null)
+        store.putComponent(npcRef, ModelComponent.getComponentType(), ModelComponent(model))
+        store.putComponent(npcRef, PersistentModel.getComponentType(), PersistentModel(model.toReference()))
+        return true
+    }
+
+    fun applyModelToNpc(
+        holder: Holder<EntityStore>,
+        modelAssetId: String,
+        scale: Float = 1.0f
+    ): Boolean {
+        val cleanModel = modelAssetId.trim()
+        if (cleanModel.isBlank()) return false
+        val asset = ModelAsset.getAssetMap().getAsset(cleanModel) ?: return false
+        val model = Model.createScaledModel(asset, if (scale > 0f) scale else 1.0f, null)
+        holder.putComponent(ModelComponent.getComponentType(), ModelComponent(model))
+        holder.putComponent(PersistentModel.getComponentType(), PersistentModel(model.toReference()))
+        return true
     }
 
     fun ensureValidSkin(skin: PlayerSkin): PlayerSkin {
@@ -613,7 +703,8 @@ object AppearanceHelper {
 
     fun buildFinalModel(rawSkin: PlayerSkin?, savedData: SavedModelData): Model? {
         val skin = rawSkin?.let { ensureValidSkin(it) }
-        val baseFromSkin = if (skin != null) {
+        val shouldUseSkin = skin != null && (savedData.modelAssetId == null || savedData.modelAssetId.equals(DEFAULT_PLAYER_MODEL_NAME, ignoreCase = true))
+        val baseFromSkin = if (shouldUseSkin && skin != null) {
             try {
                 CosmeticsModule.get().createModel(skin)
             } catch (_: Throwable) {
@@ -741,6 +832,21 @@ object AppearanceHelper {
 
             equipItems(npcRef, store, mainHand, offHand)
 
+            // Attach PlayerNpcComponent
+            var playerNpcComp = store.getComponent(npcRef, PlayerNpcComponent.componentType)
+            if (playerNpcComp == null) {
+                playerNpcComp = PlayerNpcComponent()
+            }
+            if (playerSkin != null) {
+                playerNpcComp.skinJson = playerSkinToJson(playerSkin)
+            }
+            if (modelToApply != null) {
+                playerNpcComp.attachmentsJson = modelAttachmentsToJson(modelToApply)
+            }
+            playerNpcComp.mainHandItem = mainHand
+            playerNpcComp.offHandItem = offHand
+            store.putComponent(npcRef, PlayerNpcComponent.componentType, playerNpcComp)
+
             if (saveToConfig) {
                 var config = store.getComponent(npcRef, VaultNpcComponent.componentType)
                 if (config == null) {
@@ -779,6 +885,17 @@ object AppearanceHelper {
                 store.putComponent(npcRef, ModelComponent.getComponentType(), ModelComponent(newModel))
                 store.putComponent(npcRef, PersistentModel.getComponentType(), PersistentModel(newModel.toReference()))
             }
+
+            // Attach PlayerNpcComponent
+            var playerNpcComp = store.getComponent(npcRef, PlayerNpcComponent.componentType)
+            if (playerNpcComp == null) {
+                playerNpcComp = PlayerNpcComponent()
+            }
+            playerNpcComp.skinJson = playerSkinToJson(validSkin)
+            if (newModel != null) {
+                playerNpcComp.attachmentsJson = modelAttachmentsToJson(newModel)
+            }
+            store.putComponent(npcRef, PlayerNpcComponent.componentType, playerNpcComp)
 
             if (saveToConfig) {
                 var config = store.getComponent(npcRef, VaultNpcComponent.componentType)
@@ -831,29 +948,49 @@ object AppearanceHelper {
         store: Store<EntityStore>,
         config: VaultNpcComponent
     ) {
-        val skinJson = config.skinJson
-        val attachmentsJson = config.attachmentsJson
-
         store.externalData.world.execute {
             if (!npcRef.isValid) return@execute
 
-            val skin = if (skinJson.isNotBlank()) jsonToPlayerSkin(skinJson) else null
-            if (skin != null) {
-                val skinComp = PlayerSkinComponent(skin)
-                skinComp.setNetworkOutdated()
-                store.putComponent(npcRef, PlayerSkinComponent.getComponentType(), skinComp)
-            }
+            val isPlayer = isPlayerNpc(npcRef, store)
+            if (isPlayer) {
+                // Ensure PlayerNpcComponent is attached on player NPCs
+                if (store.getComponent(npcRef, PlayerNpcComponent.componentType) == null) {
+                    val pComp = PlayerNpcComponent()
+                    pComp.skinJson = config.skinJson
+                    pComp.attachmentsJson = config.attachmentsJson
+                    pComp.pose = config.pose
+                    pComp.mainHandItem = config.mainHandItem
+                    pComp.offHandItem = config.offHandItem
+                    store.putComponent(npcRef, PlayerNpcComponent.componentType, pComp)
+                }
 
-            val savedData = jsonToModelData(attachmentsJson)
-            val finalModel = buildFinalModel(skin, savedData)
-            if (finalModel != null) {
-                store.putComponent(npcRef, ModelComponent.getComponentType(), ModelComponent(finalModel))
-                store.putComponent(npcRef, PersistentModel.getComponentType(), PersistentModel(finalModel.toReference()))
+                val skinJson = config.skinJson
+                val attachmentsJson = config.attachmentsJson
+
+                val skin = if (skinJson.isNotBlank()) jsonToPlayerSkin(skinJson) else null
+                if (skin != null) {
+                    val skinComp = PlayerSkinComponent(skin)
+                    skinComp.setNetworkOutdated()
+                    store.putComponent(npcRef, PlayerSkinComponent.getComponentType(), skinComp)
+                }
+
+                val savedData = jsonToModelData(attachmentsJson)
+                val effectiveData = if (config.model.isNotBlank()) savedData.copy(modelAssetId = config.model) else savedData
+                val finalModel = buildFinalModel(skin, effectiveData)
+                if (finalModel != null) {
+                    store.putComponent(npcRef, ModelComponent.getComponentType(), ModelComponent(finalModel))
+                    store.putComponent(npcRef, PersistentModel.getComponentType(), PersistentModel(finalModel.toReference()))
+                }
+                if (config.pose.isNotBlank()) {
+                    applyPose(npcRef, store, config.pose)
+                }
+                equipItems(npcRef, store, config.mainHandItem, config.offHandItem)
+            } else {
+                // Non-player NPC: only apply custom model if explicitly configured
+                if (config.model.isNotBlank()) {
+                    applyModelToNpc(npcRef, store, config.model)
+                }
             }
-            if (config.pose.isNotBlank()) {
-                applyPose(npcRef, store, config.pose)
-            }
-            equipItems(npcRef, store, config.mainHandItem, config.offHandItem)
         }
     }
 
@@ -861,34 +998,53 @@ object AppearanceHelper {
         holder: Holder<EntityStore>,
         config: VaultNpcComponent
     ) {
-        val skinJson = config.skinJson
-        val attachmentsJson = config.attachmentsJson
-
-        val skin = if (skinJson.isNotBlank()) jsonToPlayerSkin(skinJson) else null
-        if (skin != null) {
-            val skinComp = PlayerSkinComponent(skin)
-            skinComp.setNetworkOutdated()
-            holder.putComponent(PlayerSkinComponent.getComponentType(), skinComp)
-        }
-
-        val savedData = jsonToModelData(attachmentsJson)
-        val finalModel = buildFinalModel(skin, savedData)
-        if (finalModel != null) {
-            holder.putComponent(ModelComponent.getComponentType(), ModelComponent(finalModel))
-            holder.putComponent(PersistentModel.getComponentType(), PersistentModel(finalModel.toReference()))
-        }
-        equipItemsToNpc(holder, config.mainHandItem, config.offHandItem)
-
-        val pose = config.pose
-        if (pose.isNotBlank() && !pose.equals("None", ignoreCase = true)) {
-            val allPoses = PoseAsset.getAllPoses()
-            val matchedPose = allPoses.firstOrNull { it.name.equals(pose, ignoreCase = true) }?.name ?: pose
-            var activeAnim = holder.getComponent(ActiveAnimationComponent.getComponentType())
-            if (activeAnim == null) {
-                activeAnim = ActiveAnimationComponent()
-                holder.putComponent(ActiveAnimationComponent.getComponentType(), activeAnim)
+        val isPlayer = isPlayerNpc(holder)
+        if (isPlayer) {
+            if (holder.getComponent(PlayerNpcComponent.componentType) == null) {
+                val pComp = PlayerNpcComponent()
+                pComp.skinJson = config.skinJson
+                pComp.attachmentsJson = config.attachmentsJson
+                pComp.pose = config.pose
+                pComp.mainHandItem = config.mainHandItem
+                pComp.offHandItem = config.offHandItem
+                holder.putComponent(PlayerNpcComponent.componentType, pComp)
             }
-            activeAnim.setPlayingAnimation(AnimationSlot.Status, matchedPose)
+
+            val skinJson = config.skinJson
+            val attachmentsJson = config.attachmentsJson
+
+            val skin = if (skinJson.isNotBlank()) jsonToPlayerSkin(skinJson) else null
+            if (skin != null) {
+                val skinComp = PlayerSkinComponent(skin)
+                skinComp.setNetworkOutdated()
+                holder.putComponent(PlayerSkinComponent.getComponentType(), skinComp)
+            }
+
+            val savedData = jsonToModelData(attachmentsJson)
+            val effectiveData = if (config.model.isNotBlank()) savedData.copy(modelAssetId = config.model) else savedData
+            val finalModel = buildFinalModel(skin, effectiveData)
+            if (finalModel != null) {
+                holder.putComponent(ModelComponent.getComponentType(), ModelComponent(finalModel))
+                holder.putComponent(PersistentModel.getComponentType(), PersistentModel(finalModel.toReference()))
+            }
+            equipItemsToNpc(holder, config.mainHandItem, config.offHandItem)
+
+            val pose = config.pose
+            if (pose.isNotBlank() && !pose.equals("None", ignoreCase = true)) {
+                val allPoses = PoseAsset.getAllPoses()
+                val matchedPose = allPoses.firstOrNull { it.name.equals(pose, ignoreCase = true) }?.name ?: pose
+                var activeAnim = holder.getComponent(ActiveAnimationComponent.getComponentType())
+                if (activeAnim == null) {
+                    activeAnim = ActiveAnimationComponent()
+                    holder.putComponent(ActiveAnimationComponent.getComponentType(), activeAnim)
+                }
+                activeAnim.setPlayingAnimation(AnimationSlot.Status, matchedPose)
+            }
+        } else {
+            // Non-player NPC: only apply custom model if explicitly configured
+            if (config.model.isNotBlank()) {
+                applyModelToNpc(holder, config.model)
+            }
         }
     }
 }

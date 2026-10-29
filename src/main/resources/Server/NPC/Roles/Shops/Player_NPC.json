@@ -72,13 +72,11 @@
             },
             {
               "Sensor": {
-                "Type": "Player",
-                "Range": 12
-              }
-            },
-            {
-              "Sensor": {
-                "Type": "Any"
+                "Type": "Not",
+                "Sensor": {
+                  "Type": "Player",
+                  "Range": 12
+                }
               },
               "Actions": [
                 {
@@ -86,10 +84,18 @@
                   "State": "Idle"
                 }
               ],
-              "$Comment": "Return to idle if player leaves"
+              "$Comment": "Return to Idle when player leaves"
+            },
+            {
+              "Sensor": {
+                "Type": "Any"
+              },
+              "BodyMotion": {
+                "Type": "Nothing"
+              }
             }
           ],
-          "$Comment": "Watching state - player nearby"
+          "$Comment": "Watching state - player is nearby, just watch them"
         },
         {
           "Sensor": {
@@ -99,13 +105,13 @@
           "Instructions": [
             {
               "Sensor": {
-                "Type": "InteractionTarget",
-                "Range": 6
+                "Type": "Target",
+                "Range": 10
               },
               "HeadMotion": {
                 "Type": "Watch"
               },
-              "$Comment": "Interaction state - look at player while interaction is active"
+              "Continue": true
             },
             {
               "Sensor": {
@@ -113,65 +119,104 @@
               },
               "Actions": [
                 {
-                  "Type": "State",
-                  "State": "Idle"
+                  "Type": "Timeout",
+                  "Delay": [
+                    1,
+                    1
+                  ],
+                  "Action": {
+                    "Type": "Sequence",
+                    "Actions": [
+                      {
+                        "Type": "ReleaseTarget"
+                      },
+                      {
+                        "Type": "State",
+                        "State": "Watching"
+                      }
+                    ]
+                  }
                 }
               ],
-              "$Comment": "Return to idle if player leaves interaction range"
+              "$Comment": "Return to Watching after interaction ends"
+            },
+            {
+              "Sensor": {
+                "Type": "Any"
+              },
+              "BodyMotion": {
+                "Type": "Nothing"
+              }
             }
-          ]
-        }
-      ]
-    },
-    {
-      "Sensor": {
-        "Type": "InteractionIteration"
-      },
-      "Instructions": [
-        {
-          "Sensor": {
-            "Type": "State",
-            "State": "$Interaction"
-          },
-          "Actions": [
-            {
-              "Type": "LockOnInteractionTarget"
-            },
-            {
-              "Type": "OpenNpcDialogue"
-            },
-            {
-              "Type": "OpenVaultShop"
-            },
-            {
-              "Type": "State",
-              "State": "$Interaction"
-            }
-          ]
-        },
-        {
-          "Sensor": {
-            "Type": "Any"
-          },
-          "Actions": [
-            {
-              "Type": "LockOnInteractionTarget"
-            },
-            {
-              "Type": "OpenNpcDialogue"
-            },
-            {
-              "Type": "OpenVaultShop"
-            },
-            {
-              "Type": "State",
-              "State": "$Interaction"
-            }
-          ]
+          ],
+          "$Comment": "Interaction state - look at player while shop is open"
         }
       ]
     }
   ],
+  "InteractionInstruction": {
+    "Instructions": [
+      {
+        "Sensor": {
+          "Type": "Not",
+          "Sensor": {
+            "Type": "CanInteract",
+            "ViewSector": 180
+          }
+        },
+        "Actions": [
+          {
+            "Type": "SetInteractable",
+            "Interactable": false
+          }
+        ]
+      },
+      {
+        "Sensor": {
+          "Type": "Any"
+        },
+        "Actions": [
+          {
+            "Type": "SetInteractable",
+            "Interactable": true,
+            "Hint": "server.interactionHints.trade"
+          }
+        ],
+        "Continue": true
+      },
+      {
+        "Sensor": {
+          "Type": "HasInteracted"
+        },
+        "Instructions": [
+          {
+            "Sensor": {
+              "Type": "Not",
+              "Sensor": {
+                "Type": "State",
+                "State": "$Interaction"
+              }
+            },
+            "Actions": [
+              {
+                "Type": "LockOnInteractionTarget"
+              },
+              {
+                "Type": "OpenNpcDialogue"
+              },
+              {
+                "Type": "OpenVaultShop"
+              },
+              {
+                "Type": "State",
+                "State": "$Interaction"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
   "Parameters": {
     "Invulnerable": {
       "Value": true,
