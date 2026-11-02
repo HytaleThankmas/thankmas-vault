@@ -16,7 +16,7 @@ Group #Group {
     }
 
     #Content {
-      Anchor: (Width: 450, Height: 600);
+      Anchor: (Width: 450, Height: 750);
       LayoutMode: Top;
 
       Group #DisplayNameGroup {
@@ -144,6 +144,69 @@ Group #Group {
             Style: (TextColor: #ffffff);
           }
           $C.@TextField #OffHandField {
+            Anchor: (Width: 240, Height: 25, Right: 0);
+          }
+        }
+      }
+
+      Group #DeliveryNpcGroup {
+        Anchor: (Width: 400, Height: 200, Top: 15);
+        LayoutMode: Top;
+
+        Label #DeliverySectionLabel {
+          Anchor: (Width: 400, Height: 20);
+          Text: "Delivery NPC";
+          Style: (TextColor: #ffffaa);
+        }
+
+        Group #DeliveryKindGroup {
+          Anchor: (Width: 400, Height: 32, Top: 5);
+          LayoutMode: Left;
+          Label #DeliveryKindLabel {
+            Anchor: (Width: 150, Height: 32, Left: 0);
+            Text: "Delivery Kind";
+            Style: (TextColor: #ffffff, VerticalAlignment: Center);
+          }
+          $C.@DropdownBox #DeliveryKindDropdown {
+            Anchor: (Width: 240, Height: 32, Right: 0);
+          }
+        }
+
+        Group #DeliveryIdGroup {
+          Anchor: (Width: 400, Height: 25, Top: 10);
+          LayoutMode: Left;
+          Label #DeliveryIdLabel {
+            Anchor: (Width: 150, Height: 25, Left: 0);
+            Text: "Delivery ID";
+            Style: (TextColor: #ffffff);
+          }
+          $C.@TextField #DeliveryIdField {
+            Anchor: (Width: 240, Height: 25, Right: 0);
+          }
+        }
+
+        Group #DeliveryBonusPointsGroup {
+          Anchor: (Width: 400, Height: 25, Top: 10);
+          LayoutMode: Left;
+          Label #DeliveryBonusPointsLabel {
+            Anchor: (Width: 150, Height: 25, Left: 0);
+            Text: "Bonus Points";
+            Style: (TextColor: #ffffff);
+          }
+          $C.@TextField #DeliveryBonusPointsField {
+            Anchor: (Width: 240, Height: 25, Right: 0);
+          }
+        }
+
+        Group #DeliveryHintGroup {
+          Anchor: (Width: 400, Height: 25, Top: 10);
+          LayoutMode: Left;
+          Label #DeliveryHintLabel {
+            Anchor: (Width: 150, Height: 25, Left: 0);
+            Text: "Location Hint";
+            Style: (TextColor: #ffffff);
+          }
+          $C.@TextField #DeliveryHintField {
             Anchor: (Width: 240, Height: 25, Right: 0);
           }
         }

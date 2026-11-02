@@ -1,5 +1,6 @@
 package dev.rm20.thankmasvault.npc.player
 
+import acorn.thankmasdelivery.component.DeliveryNpc
 import com.hypixel.hytale.component.AddReason
 import com.hypixel.hytale.component.Holder
 import com.hypixel.hytale.component.RemoveReason
@@ -21,6 +22,13 @@ class NpcLoadSystem : HolderSystem<EntityStore>() {
         val config = holder.getComponent(VaultNpcComponent.componentType) ?: return
         AppearanceHelper.applySavedAppearance(holder, config)
 
+        val dType = DeliveryNpc.getComponentType()
+        if (dType != null) {
+            val deliveryNpc = holder.getComponent(dType)
+            if (deliveryNpc != null && config.displayName.isNotBlank()) {
+                deliveryNpc.setName(config.displayName)
+            }
+        }
     }
 
     override fun onEntityRemoved(

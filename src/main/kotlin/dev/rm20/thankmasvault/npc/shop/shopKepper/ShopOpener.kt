@@ -31,7 +31,7 @@ object ShopOpener {
 
         // camera control
         if (!pointId.isNullOrBlank()) {
-            setFixedCameraFromPoint(playerRef, pointId)
+            setFixedCameraFromPoint(playerRef, pointId, npcRef = targetEntityRef)
         }
 
         // Open shop

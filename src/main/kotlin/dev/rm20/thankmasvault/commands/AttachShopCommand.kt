@@ -1,5 +1,7 @@
 package dev.rm20.thankmasvault.commands
 
+import acorn.thankmasdelivery.component.DeliveryNpc
+import acorn.thankmasdelivery.npc.DeliveryNpcActionBuilder
 import com.hypixel.hytale.component.Ref
 import com.hypixel.hytale.component.Store
 import com.hypixel.hytale.server.core.Message
@@ -44,7 +46,7 @@ class AttachShopCommand : AbstractPlayerCommand("attachshop", "Configure Vault N
 
         if (!hasVaultNpcAction(targetRef, store)) {
             context.sendMessage(
-                Message.raw("Cannot configure entity: entity does not have 'OpenVaultShop' or 'OpenDialogue' action")
+                Message.raw("Cannot configure entity: entity is not an NPC or does not have 'OpenVaultShop', 'OpenDialogue', or 'DeliveryNpc'")
             )
             return
         }
@@ -59,19 +61,36 @@ class AttachShopCommand : AbstractPlayerCommand("attachshop", "Configure Vault N
         player.pageManager.openCustomPage(ref, store, page)
     }
 
-    // used to check if an entity has the shop or dialogue action
+    // used to check if an entity is an NPC or has the shop/dialogue/delivery action
     private fun hasVaultNpcAction(targetRef: Ref<EntityStore>, store: Store<EntityStore>): Boolean {
+        val deliveryNpcType = DeliveryNpc.getComponentType()
+        if (deliveryNpcType != null && store.getComponent(targetRef, deliveryNpcType) != null) {
+            return true
+        }
+
         val npcType = NPCEntity.getComponentType() ?: return false
         val npc = store.getComponent(targetRef, npcType) ?: return false
-        val role = npc.role ?: return false
+        val role = npc.role ?: return true
 
         val interactionInstruction = role.interactionInstruction
-        if (interactionInstruction != null && (containsAction(interactionInstruction, ActionOpenShop::class.java) || containsAction(interactionInstruction, ActionOpenDialogue::class.java))) {
+        if (interactionInstruction != null && (
+            containsAction(interactionInstruction, ActionOpenShop::class.java) ||
+            containsAction(interactionInstruction, ActionOpenDialogue::class.java) ||
+            containsAction(interactionInstruction, DeliveryNpcActionBuilder::class.java)
+        )) {
             return true
         }
 
         val rootInstruction = role.rootInstruction
-        return rootInstruction != null && (containsAction(rootInstruction, ActionOpenShop::class.java) || containsAction(rootInstruction, ActionOpenDialogue::class.java))
+        if (rootInstruction != null && (
+            containsAction(rootInstruction, ActionOpenShop::class.java) ||
+            containsAction(rootInstruction, ActionOpenDialogue::class.java) ||
+            containsAction(rootInstruction, DeliveryNpcActionBuilder::class.java)
+        )) {
+            return true
+        }
+
+        return true
     }
 
     private fun containsAction(component: IAnnotatedComponent, actionClass: Class<*>): Boolean {

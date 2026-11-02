@@ -1,15 +1,24 @@
 package dev.rm20.thankmasvault.npc
 
+import acorn.thankmasdelivery.ThankmasDeliveryPlugin
+import acorn.thankmasdelivery.component.DeliveryNpc
+import acorn.thankmasdelivery.persistence.DeliveryStore
+import acorn.thankmasdelivery.util.DeliveryMessages
 import com.hypixel.hytale.codec.Codec
 import com.hypixel.hytale.codec.KeyedCodec
 import com.hypixel.hytale.codec.builder.BuilderCodec
 import com.hypixel.hytale.component.Ref
 import com.hypixel.hytale.component.Store
+import com.hypixel.hytale.protocol.InteractionType
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType
 import com.hypixel.hytale.server.core.Message
+import com.hypixel.hytale.server.core.entity.UUIDComponent
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage
 import com.hypixel.hytale.server.core.modules.entity.component.DisplayNameComponent
+import com.hypixel.hytale.server.core.modules.entity.component.Interactable
+import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent
+import com.hypixel.hytale.server.core.modules.interaction.Interactions
 import com.hypixel.hytale.server.core.ui.DropdownEntryInfo
 import com.hypixel.hytale.server.core.ui.LocalizableString
 import com.hypixel.hytale.server.core.ui.builder.EventData
@@ -17,6 +26,7 @@ import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder
 import com.hypixel.hytale.server.core.universe.PlayerRef
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
+import com.hypixel.hytale.server.npc.role.support.DisplayNameSupport
 import dev.rm20.thankmasvault.assets.PoseAsset
 import dev.rm20.thankmasvault.npc.player.AppearanceHelper
 import dev.rm20.thankmasvault.npc.player.PlayerNpcComponent
@@ -31,6 +41,11 @@ class VaultNpcPage(
     playerRef, CustomPageLifetime.CanDismissOrCloseThroughInteraction, BindingData.CODEC
 ) {
 
+    private var lastDeliveryKind: String = "none"
+    private var lastDeliveryId: String = ""
+    private var lastDeliveryBonusPoints: Int = 0
+    private var lastDeliveryHint: String = ""
+
     class BindingData {
         var displayName: String? = null
         var shopId: String? = null
@@ -41,6 +56,11 @@ class VaultNpcPage(
         var mainHandItem: String? = null
         var offHandItem: String? = null
         var action: String? = null
+
+        var deliveryKind: String? = null
+        var deliveryId: String? = null
+        var deliveryBonusPoints: String? = null
+        var deliveryHint: String? = null
 
         companion object {
             @JvmField
@@ -84,6 +104,26 @@ class VaultNpcPage(
                     KeyedCodec("@OffHandItem", Codec.STRING),
                     { data, s -> data.offHandItem = s },
                     { it.offHandItem ?: "" }
+                ).add()
+                .append(
+                    KeyedCodec("@DeliveryKind", Codec.STRING),
+                    { data, s -> data.deliveryKind = s },
+                    { it.deliveryKind ?: "" }
+                ).add()
+                .append(
+                    KeyedCodec("@DeliveryId", Codec.STRING),
+                    { data, s -> data.deliveryId = s },
+                    { it.deliveryId ?: "" }
+                ).add()
+                .append(
+                    KeyedCodec("@DeliveryBonusPoints", Codec.STRING),
+                    { data, s -> data.deliveryBonusPoints = s },
+                    { it.deliveryBonusPoints ?: "" }
+                ).add()
+                .append(
+                    KeyedCodec("@DeliveryHint", Codec.STRING),
+                    { data, s -> data.deliveryHint = s },
+                    { it.deliveryHint ?: "" }
                 ).add()
                 .append(
                     KeyedCodec("Action", Codec.STRING),
@@ -199,9 +239,73 @@ class VaultNpcPage(
                 entries.add(DropdownEntryInfo(LocalizableString.fromString(p.getLabel()), p.name))
             }
             commandBuilder.set("#PoseDropdown.Entries", entries)
+
+            commandBuilder.set("#DeliveryNpcGroup.Visible", false)
+            commandBuilder.remove("#DeliveryNpcGroup")
         } else {
             commandBuilder.set("#PlayerAppearanceGroup.Visible", false)
             commandBuilder.remove("#PlayerAppearanceGroup")
+            commandBuilder.set("#DeliveryNpcGroup.Visible", true)
+
+            eventBuilder.addEventBinding(
+                CustomUIEventBindingType.ValueChanged,
+                "#DeliveryKindDropdown",
+                EventData.of("@DeliveryKind", "#DeliveryKindDropdown.Value"),
+                false
+            )
+
+            eventBuilder.addEventBinding(
+                CustomUIEventBindingType.ValueChanged,
+                "#DeliveryIdField",
+                EventData.of("@DeliveryId", "#DeliveryIdField.Value"),
+                false
+            )
+
+            eventBuilder.addEventBinding(
+                CustomUIEventBindingType.ValueChanged,
+                "#DeliveryBonusPointsField",
+                EventData.of("@DeliveryBonusPoints", "#DeliveryBonusPointsField.Value"),
+                false
+            )
+
+            eventBuilder.addEventBinding(
+                CustomUIEventBindingType.ValueChanged,
+                "#DeliveryHintField",
+                EventData.of("@DeliveryHint", "#DeliveryHintField.Value"),
+                false
+            )
+
+            val kindEntries = ArrayList<DropdownEntryInfo>()
+            kindEntries.add(DropdownEntryInfo(LocalizableString.fromString("None"), "none"))
+            kindEntries.add(DropdownEntryInfo(LocalizableString.fromString("Dispatcher"), "dispatcher"))
+            kindEntries.add(DropdownEntryInfo(LocalizableString.fromString("Recipient"), "recipient"))
+            commandBuilder.set("#DeliveryKindDropdown.Entries", kindEntries)
+
+            val dType = DeliveryNpc.getComponentType()
+            val existingDelivery = if (dType != null) store.getComponent(targetEntityRef, dType) else null
+
+            val config = store.getComponent(targetEntityRef, VaultNpcComponent.componentType)
+            val service = ThankmasDeliveryPlugin.get()?.deliveryService()
+            if (existingDelivery != null) {
+                lastDeliveryKind = existingDelivery.kind()
+                lastDeliveryId = existingDelivery.id()
+                lastDeliveryBonusPoints = existingDelivery.bonusPoints
+                lastDeliveryHint = existingDelivery.hint().ifBlank {
+                    if (existingDelivery.id().isNotBlank()) {
+                        service?.deliveryStore()?.recipient(existingDelivery.id())?.hint() ?: ""
+                    } else ""
+                }
+            } else {
+                lastDeliveryKind = "none"
+                lastDeliveryId = DeliveryNpc.generateId(config?.displayName)
+                lastDeliveryBonusPoints = 0
+                lastDeliveryHint = ""
+            }
+
+            commandBuilder.set("#DeliveryKindDropdown.Value", lastDeliveryKind)
+            commandBuilder.set("#DeliveryIdField.Value", lastDeliveryId)
+            commandBuilder.set("#DeliveryBonusPointsField.Value", lastDeliveryBonusPoints.toString())
+            commandBuilder.set("#DeliveryHintField.Value", lastDeliveryHint)
         }
 
         val config = store.getComponent(targetEntityRef, VaultNpcComponent.componentType)
@@ -241,6 +345,13 @@ class VaultNpcPage(
             val newName = data.displayName!!.trim()
             config.displayName = newName
             changed = true
+            val autoId = DeliveryNpc.generateId(newName)
+            val oldId = lastDeliveryId
+            lastDeliveryId = autoId
+            val updateCmd = UICommandBuilder()
+            updateCmd.set("#DeliveryIdField.Value", autoId)
+            sendUpdate(updateCmd, false)
+
             store.externalData.world.execute {
                 if (targetEntityRef.isValid) {
                     store.putComponent(
@@ -248,6 +359,19 @@ class VaultNpcPage(
                         DisplayNameComponent.getComponentType(),
                         DisplayNameComponent(Message.raw(newName))
                     )
+                    val dType = DeliveryNpc.getComponentType()
+                    if (dType != null) {
+                        val dNpc = store.getComponent(targetEntityRef, dType)
+                        if (dNpc != null) {
+                            dNpc.setName(newName)
+                            val prevId = dNpc.id()
+                            dNpc.setId(autoId)
+                            store.putComponent(targetEntityRef, dType, dNpc)
+                            if (dNpc.recipient()) {
+                                syncRecipientDestination(targetEntityRef, store, dNpc, prevId)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -349,6 +473,185 @@ class VaultNpcPage(
                 store.externalData.world.execute {
                     if (targetEntityRef.isValid) {
                         store.putComponent(targetEntityRef, PlayerNpcComponent.componentType, playerNpcComp)
+                    }
+                }
+            }
+        } else {
+            // Nonplayer NPC Delivery configuration edits
+            val dType = DeliveryNpc.getComponentType()
+            var currentDelivery = if (dType != null) store.getComponent(targetEntityRef, dType) else null
+            var deliveryChanged = false
+            var kindChanged = false
+
+            if (data.deliveryKind != null) {
+                val newKind = data.deliveryKind!!.trim().lowercase()
+                if (lastDeliveryKind != newKind) {
+                    lastDeliveryKind = newKind
+                    kindChanged = true
+                }
+            }
+
+            if (data.deliveryId != null) {
+                val inputId = data.deliveryId!!.trim()
+                val newId = if (inputId.isNotBlank()) {
+                    inputId.lowercase().replace("\\s+".toRegex(), "").replace("[^a-z0-9_-]".toRegex(), "")
+                } else {
+                    DeliveryNpc.generateId(config.displayName)
+                }
+                if (lastDeliveryId != newId) {
+                    val oldId = lastDeliveryId
+                    lastDeliveryId = newId
+                    val updateCmd = UICommandBuilder()
+                    updateCmd.set("#DeliveryIdField.Value", newId)
+                    sendUpdate(updateCmd, false)
+
+                    if (currentDelivery != null) {
+                        currentDelivery.setId(newId)
+                        deliveryChanged = true
+                        if (currentDelivery.recipient() && oldId.isNotBlank()) {
+                            val service = ThankmasDeliveryPlugin.get()?.deliveryService()
+                            service?.deliveryStore()?.removeRecipient(oldId)
+                        }
+                    }
+                }
+            }
+
+            if (data.deliveryBonusPoints != null) {
+                val rawBonus = data.deliveryBonusPoints!!.trim().removePrefix("+").trim()
+                val newBonus = rawBonus.toIntOrNull() ?: 0
+                if (lastDeliveryBonusPoints != newBonus) {
+                    lastDeliveryBonusPoints = newBonus
+                    if (currentDelivery != null) {
+                        currentDelivery.setBonusPoints(newBonus)
+                        deliveryChanged = true
+                    }
+                }
+            }
+
+            if (data.deliveryHint != null) {
+                val newHint = data.deliveryHint!!.trim()
+                if (lastDeliveryHint != newHint) {
+                    lastDeliveryHint = newHint
+                    if (currentDelivery != null) {
+                        currentDelivery.setHint(newHint)
+                        deliveryChanged = true
+                    }
+                    if (lastDeliveryKind == "recipient" && lastDeliveryId.isNotBlank()) {
+                        val service = ThankmasDeliveryPlugin.get()?.deliveryService()
+                        if (service != null) {
+                            val world = store.externalData.world
+                            service.adminAction(world, playerRef, {
+                                service.deliveryStore().setLocationHint(lastDeliveryId, newHint)
+                            }, {}, { })
+                        }
+                    }
+                }
+            }
+
+            if (kindChanged) {
+                if (lastDeliveryKind == "none") {
+                    // Selecting "none" -> should not be a deliveryNPC
+                    if (currentDelivery != null && dType != null) {
+                        val wasRecipient = currentDelivery.recipient()
+                        val recipientId = currentDelivery.id()
+                        store.externalData.world.execute {
+                            if (targetEntityRef.isValid) {
+                                store.removeComponent(targetEntityRef, dType)
+                                val interactions = store.getComponent(targetEntityRef, Interactions.getComponentType())
+                                if (interactions != null && "Parcel_Delivery_NPC" == interactions.getInteractionId(InteractionType.Use)) {
+                                    interactions.removeInteractionId(InteractionType.Use)
+                                    interactions.setInteractionHint(null)
+                                    store.putComponent(targetEntityRef, Interactions.getComponentType(), interactions)
+                                }
+                            }
+                        }
+
+                        if (wasRecipient) {
+                            val service = ThankmasDeliveryPlugin.get()?.deliveryService()
+                            service?.deliveryStore()?.removeRecipient(recipientId)
+                        }
+
+                        currentDelivery = null
+                        playerRef.sendMessage(Message.raw("[VaultNPC] Delivery role removed from NPC."))
+                    }
+                } else {
+                    // Selecting "dispatcher" or "recipient"
+                    val nameToUse = if (config.displayName.isNotBlank()) config.displayName else {
+                        if (lastDeliveryKind == "recipient") "Thankmas Recipient" else "Thankmas Dispatcher"
+                    }
+                    if (config.displayName.isBlank()) {
+                        config.displayName = nameToUse
+                        changed = true
+                        val updateCommand = UICommandBuilder()
+                        updateCommand.set("#DisplayNameField.Value", nameToUse)
+                        sendUpdate(updateCommand, false)
+                    }
+
+                    if (lastDeliveryId.isBlank()) {
+                        lastDeliveryId = DeliveryNpc.generateId(nameToUse)
+                        val updateCommand = UICommandBuilder()
+                        updateCommand.set("#DeliveryIdField.Value", lastDeliveryId)
+                        sendUpdate(updateCommand, false)
+                    }
+
+                    if (currentDelivery == null) {
+                        if (dType != null) {
+                            val newDelivery = DeliveryNpc(lastDeliveryKind, lastDeliveryId, nameToUse, lastDeliveryBonusPoints, lastDeliveryHint)
+                            store.externalData.world.execute {
+                                if (targetEntityRef.isValid) {
+                                    store.putComponent(targetEntityRef, dType, newDelivery)
+                                    DisplayNameSupport.setDisplayName(targetEntityRef, nameToUse, store)
+
+                                    val oldInteractions = store.getComponent(targetEntityRef, Interactions.getComponentType())
+                                    val interactions = if (oldInteractions == null) Interactions() else oldInteractions.clone() as Interactions
+                                    if (interactions.getInteractionId(InteractionType.Use) == null || "Parcel_Delivery_NPC" == interactions.getInteractionId(InteractionType.Use)) {
+                                        interactions.setInteractionId(InteractionType.Use, "Parcel_Delivery_NPC")
+                                        interactions.setInteractionHint("server.interactionHints.Parcel_" + (if (newDelivery.recipient()) "Recipient" else "Dispatcher"))
+                                    }
+                                    store.putComponent(targetEntityRef, Interactions.getComponentType(), interactions)
+
+                                    if (store.getComponent(targetEntityRef, Interactable.getComponentType()) == null) {
+                                        store.addComponent(targetEntityRef, Interactable.getComponentType(), Interactable.INSTANCE)
+                                    }
+
+                                    if (newDelivery.recipient()) {
+                                        syncRecipientDestination(targetEntityRef, store, newDelivery)
+                                    }
+                                }
+                            }
+                            currentDelivery = newDelivery
+                            playerRef.sendMessage(Message.raw("[VaultNPC] Configured as Delivery NPC ($lastDeliveryKind, $lastDeliveryId)."))
+                        }
+                    } else {
+                        val wasRecipient = currentDelivery.recipient()
+                        val oldId = currentDelivery.id()
+                        currentDelivery.setKind(lastDeliveryKind)
+                        deliveryChanged = true
+                        if (wasRecipient && !currentDelivery.recipient()) {
+                            val service = ThankmasDeliveryPlugin.get()?.deliveryService()
+                            service?.deliveryStore()?.removeRecipient(oldId)
+                        }
+                        playerRef.sendMessage(Message.raw("[VaultNPC] Changed Delivery kind to '$lastDeliveryKind'."))
+                    }
+                }
+            }
+
+            if (currentDelivery != null) {
+                val nameToUse = config.displayName.ifBlank { currentDelivery.name() }
+                if (currentDelivery.name() != nameToUse) {
+                    currentDelivery.setName(nameToUse)
+                    deliveryChanged = true
+                }
+            }
+
+            if (deliveryChanged && currentDelivery != null && dType != null) {
+                val toSave = currentDelivery
+                store.externalData.world.execute {
+                    if (targetEntityRef.isValid) {
+                        store.putComponent(targetEntityRef, dType, toSave)
+                        if (toSave.recipient()) {
+                            syncRecipientDestination(targetEntityRef, store, toSave)
+                        }
                     }
                 }
             }
@@ -457,6 +760,36 @@ class VaultNpcPage(
                 }
             }
         }
+    }
+
+    private fun syncRecipientDestination(ref: Ref<EntityStore>, store: Store<EntityStore>, marker: DeliveryNpc, oldId: String? = null) {
+        val service = ThankmasDeliveryPlugin.get()?.deliveryService() ?: return
+        val transform = store.getComponent(ref, TransformComponent.getComponentType()) ?: return
+        val uuid = store.getComponent(ref, UUIDComponent.getComponentType()) ?: return
+        val world = store.externalData.world
+        val pos = transform.position
+        val hintToUse = marker.hint().ifBlank {
+            service.deliveryStore().recipient(marker.id())?.hint() ?: lastDeliveryHint
+        }
+        if (oldId != null && oldId.isNotBlank() && oldId != marker.id()) {
+            service.deliveryStore().removeRecipient(oldId)
+        }
+        val destination = DeliveryStore.Destination(
+            marker.id(),
+            marker.name(),
+            world.name,
+            pos.x,
+            pos.y,
+            pos.z,
+            hintToUse,
+            uuid.uuid,
+            world.worldConfig.uuid,
+            false,
+            "",
+            marker.bonusPoints
+        )
+        service.deliveryStore().register(destination)
+        service.observeRecipient(ref, marker)
     }
 
     override fun onDismiss(ref: Ref<EntityStore>, store: Store<EntityStore>) {

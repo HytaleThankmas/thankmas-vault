@@ -100,8 +100,7 @@
         "Sensor": {
           "Type": "Not",
           "Sensor": {
-            "Type": "CanInteract",
-            "ViewSector": 180
+            "Type": "CanInteract"
           }
         },
         "Actions": [

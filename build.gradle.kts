@@ -34,4 +34,5 @@ dependencies {
     // implementation("com.github.rm20killer:CodecAnnotation:ac9cf6574a")
     compileOnly(files("../../libs/AnglersAlmanac-1.2.2-Thankmas.jar"))
     compileOnly(files("../../libs/Wardrobe-0.3.5+0.7.2.jar"))
+    compileOnly(project(":plugins:thankmas-delivery"))
 }

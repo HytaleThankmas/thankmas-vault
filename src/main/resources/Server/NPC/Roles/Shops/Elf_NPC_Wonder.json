@@ -1,21 +1,11 @@
 {
   "Type": "Generic",
   "StartState": "Idle",
-  "BusyStates": [
-    "$Interaction"
-  ],
+  "BusyStates": ["$Interaction"],
   "Appearance": "NPC_Elf",
-  "DropList": "Drop_Trillodon",
   "MaxHealth": 145,
-  "IsMemory": true,
-  "MemoriesCategory": "Reptile",
   "NameTranslationKey": {
     "Compute": "NameTranslationKey"
-  },
-  "DefaultNPCAttitude": "Ignore",
-  "DefaultPlayerAttitude": "Neutral",
-  "Invulnerable": {
-    "Compute": "Invulnerable"
   },
   "MotionControllerList": [
     {
@@ -70,10 +60,7 @@
               "Actions": [
                 {
                   "Type": "Timeout",
-                  "Delay": [
-                    1,
-                    1
-                  ],
+                  "Delay": [1, 1],
                   "Action": {
                     "Type": "Sequence",
                     "Actions": [
@@ -100,8 +87,7 @@
         "Sensor": {
           "Type": "Not",
           "Sensor": {
-            "Type": "CanInteract",
-            "ViewSector": 180
+            "Type": "CanInteract"
           }
         },
         "Actions": [
@@ -163,5 +149,13 @@
       "Value": "server.npcRoles.Trillodon.name",
       "Description": "Translation key for NPC name display"
     }
+  },
+  "DropList": "Drop_Trillodon",
+  "IsMemory": true,
+  "MemoriesCategory": "Reptile",
+  "DefaultNPCAttitude": "Ignore",
+  "DefaultPlayerAttitude": "Neutral",
+  "Invulnerable": {
+    "Compute": "Invulnerable"
   }
 }

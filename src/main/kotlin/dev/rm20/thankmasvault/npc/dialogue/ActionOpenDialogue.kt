@@ -13,6 +13,7 @@ import dev.rm20.thankmasvault.ThankmasVault
 import dev.rm20.thankmasvault.assets.NpcAsset
 import dev.rm20.thankmasvault.assets.VaultShopAsset
 import dev.rm20.thankmasvault.npc.VaultNpcComponent
+import dev.rm20.thankmasvault.npc.player.PlayerNpcComponent
 import dev.rm20.thankmasvault.utils.CameraUtil.setFixedCameraFromPoint
 import javax.annotation.Nonnull
 import javax.annotation.Nullable
@@ -48,11 +49,28 @@ class ActionOpenDialogue(
         val playerRef = store.getComponent(targetRef, PlayerRef.getComponentType()) ?: return false
 
         val vaultNpcComponent = store.getComponent(ref, VaultNpcComponent.componentType) ?: return false
+        var dialogue: Dialogue?
+        if (vaultNpcComponent.dialogueId.isEmpty()) {
+            val name = vaultNpcComponent.displayName
+            if(name.isBlank()) return false
 
-        if (vaultNpcComponent.dialogueId.isEmpty()) return false
-        val npcAsset = NpcAsset.getById(vaultNpcComponent.dialogueId) ?: return false
 
-        val dialogue = npcAsset.dialogue ?: return false
+            var id = "NPC_$name"
+            if(store.getComponent(ref, PlayerNpcComponent.componentType) != null)
+            {
+                id = "Player_$name"
+            }
+
+
+            val npcAsset = NpcAsset.getById(id) ?: return false
+            dialogue = npcAsset.dialogue ?: return false
+        }
+        else
+        {
+            val npcAsset = NpcAsset.getById(vaultNpcComponent.dialogueId) ?: return false
+            dialogue = npcAsset.dialogue ?: return false
+        }
+
         val pointId = vaultNpcComponent.pointId
 
 
@@ -60,8 +78,8 @@ class ActionOpenDialogue(
         val playerRef1 = playerRef.reference?: return false
 
         val player = store.getComponent(playerRef1, Player.getComponentType()) ?: return false
-        if (!pointId.isNullOrBlank()) {
-            setFixedCameraFromPoint(playerRef, pointId)
+        if (pointId.isNotBlank()) {
+            setFixedCameraFromPoint(playerRef, pointId, npcRef = ref)
         }
         player.pageManager.openCustomPage(playerRef1, store, page)
 

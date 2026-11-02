@@ -27,7 +27,7 @@ object FishBagUIHandler {
                         val pointId = vaultNpcComponent.pointId
 
                         if (pointId.isNotBlank()) {
-                            setFixedCameraFromPoint(playerRef, pointId)
+                            setFixedCameraFromPoint(playerRef, pointId, npcRef = npcRef)
                         }
 
                     }

@@ -5,6 +5,7 @@ import com.hypixel.hytale.assetstore.AssetStore
 import com.hypixel.hytale.assetstore.map.DefaultAssetMap
 import com.hypixel.hytale.server.core.Message
 import com.hypixel.hytale.server.core.inventory.ItemStack
+import com.hypixel.hytale.server.npc.util.InventoryHelper
 import dev.hardaway.wardrobe.impl.cosmetic.CosmeticAsset
 import dev.rm20.thankmasvault.utils.TranslationUtil
 import gg.ginco.jellyparty.codec.AssetBase
@@ -94,7 +95,16 @@ class ShopItemAsset : AssetBase<ShopItemAsset>() {
             }
             return ""
         }
-        return ""
+        else
+        {
+            val item: ItemStack? = InventoryHelper.createItem(itemId)
+            val msg = item?.displayDescription
+            if (msg != null && msg.ansiMessage.isNotBlank()) {
+                return msg.ansiMessage
+            }
+            return ""
+
+        }
     }
 
     fun resolveIconPath(): String? {
