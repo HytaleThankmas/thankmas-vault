@@ -200,7 +200,7 @@
           {
             "Type": "SetInteractable",
             "Interactable": true,
-            "Hint": "server.interactionHints.trade"
+            "Hint": "server.interactionHints.talk"
           }
         ],
         "Continue": true

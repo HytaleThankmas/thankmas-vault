@@ -22,6 +22,7 @@ import com.hypixel.hytale.server.core.universe.Universe
 import com.hypixel.hytale.server.core.universe.world.World
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
 import com.hypixel.hytale.server.npc.NPCPlugin
+import dev.rm20.thankmasvault.npc.NpcNameplateHelper
 import dev.rm20.thankmasvault.npc.player.AppearanceHelper
 import dev.rm20.thankmasvault.npc.player.PlayerNpcComponent
 import dev.rm20.thankmasvault.npc.VaultNpcComponent
@@ -149,6 +150,7 @@ class SpawnPlayerNpcCommand : AbstractPlayerCommand(
                 }
 
                 entityStore.putComponent(npcEntityRef, VaultNpcComponent.componentType, config)
+                NpcNameplateHelper.applyNameplate(npcEntityRef, finalName, entityStore)
 
                 var playerNpcComp = entityStore.getComponent(npcEntityRef, PlayerNpcComponent.componentType)
                 if (playerNpcComp == null) {

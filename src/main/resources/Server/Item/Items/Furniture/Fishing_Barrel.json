@@ -1,0 +1,81 @@
+{
+  "TranslationProperties": {
+    "Name": "Fishing Barrel"
+  },
+  "PlayerAnimationsId": "Block",
+  "Categories": [
+    "Furniture.Containers"
+  ],
+  "Set": "Furniture_Tavern",
+  "Icon": "Icons/ItemsGenerated/Furniture_Tavern_Barrel.png",
+  "BlockType": {
+    "BlockParticleSetId": "Wood",
+    "CustomModel": "Blocks/Decorative_Sets/Village/Barrel.blockymodel",
+    "CustomModelTexture": [
+      {
+        "Texture": "Blocks/Decorative_Sets/Village/Barrel_Tavern.png",
+        "Weight": 1
+      }
+    ],
+    "DrawType": "Model",
+    "Flags": {},
+    "Gathering": {
+      "Soft": {
+        "DropList": "Barrels"
+      }
+    },
+    "HitboxType": "Chest_Small",
+    "InteractionHitboxType": "Chest_Small",
+    "InteractionHint": "server.interactionHints.takeFishingRod",
+    "Interactions": {
+      "Use": "Fishing_Barrel_Interact",
+      "Secondary": "Fishing_Barrel_Interact"
+    },
+    "Material": "Solid",
+    "Opacity": "Transparent",
+    "ParticleColor": "#543022",
+    "RandomRotation": "YawStep1",
+    "Support": {
+      "Up": [
+        {
+          "FaceType": "Branch"
+        }
+      ],
+      "Down": [
+        {
+          "FaceType": "Full"
+        },
+        {
+          "FaceType": "Barrel"
+        }
+      ]
+    },
+    "Supporting": {
+      "Up": [
+        {
+          "FaceType": "Barrel"
+        }
+      ]
+    },
+    "BlockSoundSetId": "Wood",
+    "PhysicalMaterialId": "Wood",
+    "TextureComputedColor": "#3D2719"
+  },
+  "ResourceTypes": [
+    {
+      "Id": "Fuel"
+    },
+    {
+      "Id": "Charcoal"
+    }
+  ],
+  "Tags": {
+    "Type": [
+      "Furniture"
+    ],
+    "Family": [
+      "Tavern"
+    ]
+  },
+  "ItemSoundSetId": "ISS_Blocks_Wood"
+}

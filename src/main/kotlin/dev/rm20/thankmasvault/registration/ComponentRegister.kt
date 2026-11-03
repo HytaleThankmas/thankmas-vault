@@ -3,7 +3,10 @@ package dev.rm20.thankmasvault.registration
 import dev.rm20.thankmasvault.ThankmasVault
 import dev.rm20.thankmasvault.economy.WalletComponent
 import dev.rm20.thankmasvault.economy.WalletComponentCodec
+import dev.rm20.thankmasvault.fishing.PlayerRodProgressionComponent
+import dev.rm20.thankmasvault.fishing.PlayerRodProgressionComponentCodec
 import dev.rm20.thankmasvault.npc.NpcCameraGazeSystem
+import dev.rm20.thankmasvault.npc.NpcNameplateSystem
 import dev.rm20.thankmasvault.npc.player.NpcAppearanceSystem
 import dev.rm20.thankmasvault.npc.player.NpcLoadSystem
 import dev.rm20.thankmasvault.npc.player.NpcStoreSystem
@@ -29,10 +32,15 @@ object ComponentRegister {
             PlayerNpcComponent::class.java, "thanksmasvault:playernpc", PlayerNpcComponentCodec
         )
 
+        PlayerRodProgressionComponent.componentType = registry.registerComponent(
+            PlayerRodProgressionComponent::class.java, "thankmasvault:rod_progression", PlayerRodProgressionComponentCodec
+        )
+
         registry.registerSystem(NpcLoadSystem())
         registry.registerSystem(NpcStoreSystem())
         registry.registerSystem(NpcAppearanceSystem())
         registry.registerSystem(NpcPoseMaintenanceSystem())
         registry.registerSystem(NpcCameraGazeSystem())
+        registry.registerSystem(NpcNameplateSystem())
     }
 }

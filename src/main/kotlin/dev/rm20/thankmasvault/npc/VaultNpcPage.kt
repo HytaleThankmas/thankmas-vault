@@ -354,11 +354,7 @@ class VaultNpcPage(
 
             store.externalData.world.execute {
                 if (targetEntityRef.isValid) {
-                    store.putComponent(
-                        targetEntityRef,
-                        DisplayNameComponent.getComponentType(),
-                        DisplayNameComponent(Message.raw(newName))
-                    )
+                    NpcNameplateHelper.applyNameplate(targetEntityRef, newName, store)
                     val dType = DeliveryNpc.getComponentType()
                     if (dType != null) {
                         val dNpc = store.getComponent(targetEntityRef, dType)
@@ -600,7 +596,7 @@ class VaultNpcPage(
                             store.externalData.world.execute {
                                 if (targetEntityRef.isValid) {
                                     store.putComponent(targetEntityRef, dType, newDelivery)
-                                    DisplayNameSupport.setDisplayName(targetEntityRef, nameToUse, store)
+                                    NpcNameplateHelper.applyNameplate(targetEntityRef, nameToUse, store)
 
                                     val oldInteractions = store.getComponent(targetEntityRef, Interactions.getComponentType())
                                     val interactions = if (oldInteractions == null) Interactions() else oldInteractions.clone() as Interactions

@@ -7,6 +7,8 @@ import dev.rm20.thankmasvault.registration.CommandRegister
 import dev.rm20.thankmasvault.registration.ComponentRegister
 import dev.rm20.thankmasvault.assets.registerAssets
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent
+import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction
+import dev.rm20.thankmasvault.fishing.FishingBarrelInteraction
 import dev.rm20.thankmasvault.npc.player.AppearanceHelper
 import dev.rm20.thankmasvault.npc.player.NpcEmoteHandler
 import dev.rm20.thankmasvault.registration.DialogueActionsRegister
@@ -29,6 +31,12 @@ class ThankmasVault(init: JavaPluginInit) : JavaPlugin(init) {
         CommandRegister.registerCommands(this)
         ComponentRegister.registerComponents(this)
         NpcActionRegister.registerNpcActions(this)
+
+        getCodecRegistry(Interaction.CODEC).register(
+            "FishingBarrelInteraction",
+            FishingBarrelInteraction::class.java,
+            FishingBarrelInteraction.CODEC
+        )
 
         DialogueActionsRegister.registerDialogueActions()
         NpcEmoteHandler.register(this)

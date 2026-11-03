@@ -13,5 +13,7 @@ object CommandRegister {
         commandRegistry.registerCommand(RemoveShopCommand())
         commandRegistry.registerCommand(SpawnPlayerNpcCommand())
         commandRegistry.registerCommand(SetNpcModelCommand())
+        commandRegistry.registerCommand(RodUpgradeCommand())
+        commandRegistry.registerCommand(RespawnPlayerNpcsCommand())
     }
 }

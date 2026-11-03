@@ -5,6 +5,7 @@ import dev.rm20.thankmasvault.npc.dialogue.DialogueActionRegistry
 import dev.rm20.thankmasvault.npc.shop.fishing.FishBagUIHandler.openFishMarket
 import dev.rm20.thankmasvault.npc.shop.shopKepper.ShopOpener.openShop
 import dev.rm20.anglersalmanac.Inventory.FishBagUIHandler
+import dev.rm20.thankmasvault.fishing.RodShopOpener
 
 object DialogueActionsRegister {
 
@@ -14,18 +15,27 @@ object DialogueActionsRegister {
         }
 
         DialogueActionRegistry.register("fishMarket", keepCamera = true) { playerRef, npcRef, _ ->
-            if(playerRef.reference == null) return@register
+            if (playerRef.reference == null) return@register
             val player = playerRef.reference!!.store.getComponent(playerRef.reference!!, Player.getComponentType())
-            if(player != null) openFishMarket(player, npcRef)
+            if (player != null) openFishMarket(player, npcRef)
         }
 
         DialogueActionRegistry.register("fishbag", keepCamera = false) { playerRef, npcRef, _ ->
-            if(playerRef.reference == null) return@register
+            if (playerRef.reference == null) return@register
             val player = playerRef.reference!!.store.getComponent(playerRef.reference!!, Player.getComponentType())
             FishBagUIHandler.openFishBag(player)
         }
+
+        DialogueActionRegistry.register("rodUpgrade", keepCamera = true) { playerRef, npcRef, _ ->
+            RodShopOpener.openRodShop(playerRef, npcRef)
+        }
+
+        DialogueActionRegistry.register("upgradeRod", keepCamera = true) { playerRef, npcRef, _ ->
+            RodShopOpener.openRodShop(playerRef, npcRef)
+        }
+
+        DialogueActionRegistry.register("rodShop", keepCamera = true) { playerRef, npcRef, _ ->
+            RodShopOpener.openRodShop(playerRef, npcRef)
+        }
     }
-
-
-
 }

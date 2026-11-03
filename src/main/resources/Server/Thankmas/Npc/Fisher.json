@@ -15,6 +15,10 @@
           {
             "Action": "fishbag",
             "Title": "I want to see my fishes"
+          },
+          {
+            "Action": "rodUpgrade",
+            "Title": "I want to upgrade my fishing rod"
           }
         ],
         "Content": [
