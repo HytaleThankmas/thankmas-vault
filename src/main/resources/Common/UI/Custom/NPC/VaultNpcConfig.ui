@@ -46,6 +46,19 @@ Group #Group {
         }
       }
 
+            Group #DialogueTextGroup {
+              Anchor: (Width: 400, Height: 25, Top: 15);
+              LayoutMode: Left;
+              Label #DialogueTextLabel {
+                Anchor: (Width: 150, Height: 25, Left: 0);
+                Text: "Dialogue Text";
+                Style: (TextColor: #ffffff);
+              }
+              $C.@TextField #DialogueTextField {
+                Anchor: (Width: 240, Height: 25, Right: 0);
+              }
+            }
+
       Group #ShopIdGroup {
         Anchor: (Width: 400, Height: 25, Top: 15);
         LayoutMode: Left;

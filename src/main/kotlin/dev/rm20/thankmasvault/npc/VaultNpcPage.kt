@@ -52,6 +52,7 @@ class VaultNpcPage(
         var model: String? = null
         var pointId: String? = null
         var dialogueId: String? = null
+        var dialogueText: String? = null
         var pose: String? = null
         var mainHandItem: String? = null
         var offHandItem: String? = null
@@ -89,6 +90,11 @@ class VaultNpcPage(
                     KeyedCodec("@DialogueId", Codec.STRING),
                     { data, s -> data.dialogueId = s },
                     { it.dialogueId ?: "" }
+                ).add()
+                .append(
+                    KeyedCodec("@DialogueText", Codec.STRING),
+                    { data, s -> data.dialogueText = s },
+                    { it.dialogueText ?: "" }
                 ).add()
                 .append(
                     KeyedCodec("@Pose", Codec.STRING),
@@ -176,6 +182,13 @@ class VaultNpcPage(
             CustomUIEventBindingType.ValueChanged,
             "#DialogueIdField",
             EventData.of("@DialogueId", "#DialogueIdField.Value"),
+            false
+        )
+
+        eventBuilder.addEventBinding(
+            CustomUIEventBindingType.ValueChanged,
+            "#DialogueTextField",
+            EventData.of("@DialogueText", "#DialogueTextField.Value"),
             false
         )
 
@@ -314,6 +327,7 @@ class VaultNpcPage(
         commandBuilder.set("#ModelField.Value", config?.model ?: "")
         commandBuilder.set("#PointIdField.Value", config?.pointId ?: "")
         commandBuilder.set("#DialogueIdField.Value", config?.dialogueId ?: "")
+        commandBuilder.set("#DialogueTextField.Value", config?.dialogueText ?: "")
         if (isPlayer) {
             commandBuilder.set("#PoseDropdown.Value", config?.pose?.ifBlank { "None" } ?: "None")
             commandBuilder.set("#MainHandField.Value", config?.mainHandItem ?: "")
@@ -345,12 +359,16 @@ class VaultNpcPage(
             val newName = data.displayName!!.trim()
             config.displayName = newName
             changed = true
+
+            val isPlayerNpc = AppearanceHelper.isPlayerNpc(targetEntityRef, store)
             val autoId = DeliveryNpc.generateId(newName)
             val oldId = lastDeliveryId
             lastDeliveryId = autoId
-            val updateCmd = UICommandBuilder()
-            updateCmd.set("#DeliveryIdField.Value", autoId)
-            sendUpdate(updateCmd, false)
+            if (!isPlayerNpc) {
+                val updateCmd = UICommandBuilder()
+                updateCmd.set("#DeliveryIdField.Value", autoId)
+                sendUpdate(updateCmd, false)
+            }
 
             store.externalData.world.execute {
                 if (targetEntityRef.isValid) {
@@ -409,6 +427,11 @@ class VaultNpcPage(
 
         if (data.dialogueId != null) {
             config.dialogueId = data.dialogueId!!.trim()
+            changed = true
+        }
+
+        if (data.dialogueText != null) {
+            config.dialogueText = data.dialogueText!!.trim()
             changed = true
         }
 

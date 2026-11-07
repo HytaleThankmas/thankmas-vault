@@ -1,0 +1,61 @@
+$C = "../Common.ui";
+
+Group #BgSides {
+    LayoutMode: Full;
+
+    Group #BgLeft {
+        Anchor: (Width: 160, Bottom: 0,Left: 0, Top:0);
+        Background: (TexturePath: "Images/Background_Slice.png");
+    }
+
+        Group #BgRight {
+            Anchor: (Width: 160, Bottom: 0,Right: 0,Top:0);
+            Background: (TexturePath: "Images/Background_Slice.png");
+        }
+}
+
+Group #BottomGredient {
+    Anchor: (Height: 690, Bottom: 0, Left:-10, Right:-10);
+    Background: (TexturePath: "Images/Bottom_Gredient.png");
+}
+
+Group #DialogRoot {
+    LayoutMode: Full;
+    //Left
+
+    Group #DialogPanel {
+        Anchor: (Width: 883, Height: 220, Bottom: 40, Left: 250);
+        LayoutMode: Top;
+
+        Label #SpeakerName {
+            Anchor: (Height: 45, Left: 55);
+            Text: "Unknown";
+            Style: (FontSize: 34, RenderBold: true, TextColor: $C.@ColorGoldHighlight, VerticalAlignment: Center);
+        }
+        // Dialogue Body Text
+        Label #DialogueText {
+            Anchor: (Width: 825, Height: 150, Left: 55, Top: 5);
+            Text: "SAMPLE TEXT";
+            Style: (FontSize: 26, TextColor: $C.@ColorDefault, Wrap: true);
+        }
+    }
+
+    Group #DialogPanel {
+        Anchor: (Width: 831, Height: 158, Bottom: 45, Left: 267);
+        Background: (TexturePath: "Images/Dilogue.png");
+    }
+
+
+    // Right
+    Group #Content {
+        Anchor: (Width: 500,Height: 250, Bottom: 5, Right: 460);
+            Group #ChoiceGrid {
+                Anchor: (Bottom: 0);
+                LayoutMode: MiddleCenter;
+            }
+
+    }
+}
+
+$C.@BackButton {
+}

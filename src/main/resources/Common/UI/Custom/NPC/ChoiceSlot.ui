@@ -1,19 +1,34 @@
 $C = "../Common.ui";
 
+@ChoiseButton = ButtonStyle(
+  Default: (Background: PatchStyle(TexturePath: "Images/Button.png")),
+  Hovered: (Background: PatchStyle(TexturePath: "Images/Button_Hovered.png")),
+  Pressed: (Background: PatchStyle(TexturePath: "Images/Button_Pressed.png")),
+  Disabled: (Background: PatchStyle(TexturePath: "Images/Button.png")),
+  Sounds: $C.@ButtonSounds,
+);
+
 Group {
-  Anchor: (Width: 800, Height: 50);
-  Padding: (Horizontal: 1, Vertical: 2);
+  Anchor: (Width: 880, Height: 50, Bottom:0);
+  Padding: (Horizontal: 1, Vertical: 8);
+
+  Button #ChoiceButton {
+    Anchor: (Width: 333, Height: 50,Left:0);
+    Style: @ChoiseButton;
+  }
 
   Group #CardBorder {
-    Anchor: (Full: 0);
-    Background: #6e777d(0.3);
-    Padding: (Horizontal: 12, Vertical: 6);
     LayoutMode: Left;
+    Padding: (Left: 44);
+    AssetImage #ZoneIconImage {
+      Anchor: (Width: 30, Height: 30,Left:5);
+      AssetPath: "UI/Custom/NPC/Images/Speach.png";
+    }
 
     Label #ChoiceText {
-      Padding: (Left: 4);
+      Padding: (Left: 10);
       Style: (
-        FontSize: 18,
+        FontSize: 22,
         TextColor: #eceef6,
         VerticalAlignment: Center,
         RenderBold: true
@@ -21,8 +36,5 @@ Group {
       Text: "Dialogue Choice";
     }
   }
-
-  Button #ChoiceButton {
-    Anchor: (Full: 0);
-  }
 }
+

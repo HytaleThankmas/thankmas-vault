@@ -62,12 +62,10 @@ class DialoguePage(
             }
         }
 
-        commandBuilder.append("#Subtitle", "Shop/ShopSubtitle.ui")
-        commandBuilder.set("#ShopkeeperSubtitleText.Text", "\"${content?.subtitle ?: ""}\"")
-        if (!name.isNullOrBlank())
-        {
-            commandBuilder.set("#ShopkeeperName.Text", "[${name}]: ")
+        if (!name.isNullOrBlank()) {
+            commandBuilder.set("#SpeakerName.Text", name)
         }
+        commandBuilder.set("#DialogueText.Text", content?.subtitle ?: "")
         commandBuilder.clear("#ChoiceGrid")
 
         val choices = node.choices
@@ -153,8 +151,9 @@ class DialoguePage(
                     currentNodeId = choice.next!!
                     currentHoveredSelector = null
                     refreshUI(ref, store)
-                } else {
-                    //close()
+                } else if (choice.action == null || choice.action.equals("close", ignoreCase = true) || choice.action.equals("leave", ignoreCase = true) || choice.action.equals("bye", ignoreCase = true)) {
+                    close()
+                    return
                 }
 
                 choice.action?.let { actionId ->

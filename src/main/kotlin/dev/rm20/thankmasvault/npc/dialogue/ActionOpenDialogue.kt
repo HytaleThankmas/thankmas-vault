@@ -49,25 +49,31 @@ class ActionOpenDialogue(
         val playerRef = store.getComponent(targetRef, PlayerRef.getComponentType()) ?: return false
 
         val vaultNpcComponent = store.getComponent(ref, VaultNpcComponent.componentType) ?: return false
-        var dialogue: Dialogue?
-        if (vaultNpcComponent.dialogueId.isEmpty()) {
+        var dialogue: Dialogue? = null
+        if (vaultNpcComponent.dialogueId.isNotBlank()) {
+            dialogue = NpcAsset.getById(vaultNpcComponent.dialogueId)?.dialogue
+        }
+        if (dialogue == null && vaultNpcComponent.dialogueText.isNotBlank()) {
+            val quickNode = DialogueNode(
+                content = listOf(Content(subtitle = vaultNpcComponent.dialogueText)),
+                choices = listOf(Choice(title = "Bye"))
+            )
+            dialogue = Dialogue(
+                startNode = "start",
+                nodes = mapOf("start" to quickNode)
+            )
+        }
+        if (dialogue == null) {
             val name = vaultNpcComponent.displayName
-            if(name.isBlank()) return false
+            if (name.isBlank()) return false
 
-
-            var id = "NPC_$name"
-            if(store.getComponent(ref, PlayerNpcComponent.componentType) != null)
-            {
-                id = "Player_$name"
+            val id = if (store.getComponent(ref, PlayerNpcComponent.componentType) != null) {
+                "Player_$name"
+            } else {
+                "NPC_$name"
             }
 
-
             val npcAsset = NpcAsset.getById(id) ?: return false
-            dialogue = npcAsset.dialogue ?: return false
-        }
-        else
-        {
-            val npcAsset = NpcAsset.getById(vaultNpcComponent.dialogueId) ?: return false
             dialogue = npcAsset.dialogue ?: return false
         }
 
