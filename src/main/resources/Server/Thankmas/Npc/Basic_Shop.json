@@ -6,10 +6,12 @@
         "Choices": [
           {
             "Title": "Open shop",
-            "Action": "openShop"
+            "Action": "openShop",
+            "Icon": "Container"
           },
           {
-            "Title": "Bye"
+            "Title": "Bye",
+            "Icon": "Doors"
           }
         ],
         "Content": [

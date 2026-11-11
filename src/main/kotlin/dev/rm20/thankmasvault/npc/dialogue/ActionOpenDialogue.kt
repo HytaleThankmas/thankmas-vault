@@ -56,7 +56,7 @@ class ActionOpenDialogue(
         if (dialogue == null && vaultNpcComponent.dialogueText.isNotBlank()) {
             val quickNode = DialogueNode(
                 content = listOf(Content(subtitle = vaultNpcComponent.dialogueText)),
-                choices = listOf(Choice(title = "Bye"))
+                choices = listOf(Choice(title = "Bye", null,null, null, "Doors" ))
             )
             dialogue = Dialogue(
                 startNode = "start",

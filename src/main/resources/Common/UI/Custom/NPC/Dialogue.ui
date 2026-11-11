@@ -49,8 +49,8 @@ Group #DialogRoot {
 
 
     Group #ChoiceContainer {
-      Anchor: (Width: 880, Left:3);
-      Padding: (Top: 1, Left: 3, Right: 3);
+      Anchor: (Width: 880, Left:18);
+      Padding: (Top: 1, Left: 8, Right: 8);
       LayoutMode: Top;
 
       Group #ChoiceGrid {

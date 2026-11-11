@@ -21,16 +21,30 @@ class NpcPoseMaintenanceSystem : DelayedSystem<EntityStore>(2.5f) {
                 val vaultNpc = chunk.getComponent(i, VaultNpcComponent.componentType)
                 val pose: String? = playerNpc?.pose?.takeIf { it.isNotBlank() } ?: vaultNpc?.pose?.takeIf { it.isNotBlank() }
 
-                if (!pose.isNullOrBlank() && !pose.equals("None", ignoreCase = true)) {
-                    val ref = chunk.getReferenceTo(i)
-                    if (ref.isValid) {
+                val ref = chunk.getReferenceTo(i)
+                if (!ref.isValid) continue
+
+                val isStatue = AppearanceHelper.isStatue(ref, store)
+                if (isStatue) {
+                    if (pose.isNullOrBlank() || pose.equals("None", ignoreCase = true)) {
+                        AppearanceHelper.unposeNpc(ref, store)
+                    } else {
                         val activeAnim = chunk.getComponent(i, ActiveAnimationComponent.getComponentType())
                         val currentStatus = activeAnim?.activeAnimations?.getOrNull(AnimationSlot.Status.ordinal)
-
-                        // Only re-apply if the pose was actually interrupted or cleared (zero overhead when steady)
                         if (currentStatus == null || !currentStatus.equals(pose, ignoreCase = true)) {
                             AppearanceHelper.applyPose(ref, store, pose)
                         }
+                    }
+                    continue
+                }
+
+                if (!pose.isNullOrBlank() && !pose.equals("None", ignoreCase = true)) {
+                    val activeAnim = chunk.getComponent(i, ActiveAnimationComponent.getComponentType())
+                    val currentStatus = activeAnim?.activeAnimations?.getOrNull(AnimationSlot.Status.ordinal)
+
+                    // Only re-apply if the pose was actually interrupted or cleared (zero overhead when steady)
+                    if (currentStatus == null || !currentStatus.equals(pose, ignoreCase = true)) {
+                        AppearanceHelper.applyPose(ref, store, pose)
                     }
                 }
             }

@@ -1,6 +1,8 @@
 package dev.rm20.thankmasvault.commands
 
+import acorn.thankmasdelivery.ThankmasDeliveryPlugin
 import acorn.thankmasdelivery.component.DeliveryNpc
+import acorn.thankmasdelivery.persistence.DeliveryStore
 import com.hypixel.hytale.assetstore.map.AssetMapWithIndexes
 import com.hypixel.hytale.component.Ref
 import com.hypixel.hytale.component.RemoveReason
@@ -8,6 +10,7 @@ import com.hypixel.hytale.component.Store
 import com.hypixel.hytale.component.query.Query
 import com.hypixel.hytale.math.vector.Rotation3f
 import com.hypixel.hytale.protocol.AnimationSlot
+import com.hypixel.hytale.protocol.InteractionType
 import com.hypixel.hytale.protocol.PlayerSkin
 import com.hypixel.hytale.server.core.Message
 import com.hypixel.hytale.server.core.NameMatching
@@ -17,14 +20,12 @@ import com.hypixel.hytale.server.core.command.system.CommandContext
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayerCommand
 import com.hypixel.hytale.server.core.cosmetics.CosmeticsModule
+import com.hypixel.hytale.server.core.entity.UUIDComponent
 import com.hypixel.hytale.server.core.entity.entities.Player
 import com.hypixel.hytale.server.core.inventory.InventoryComponent
-import com.hypixel.hytale.server.core.modules.entity.component.ActiveAnimationComponent
-import com.hypixel.hytale.server.core.modules.entity.component.HeadRotation
-import com.hypixel.hytale.server.core.modules.entity.component.ModelComponent
-import com.hypixel.hytale.server.core.modules.entity.component.PersistentModel
-import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent
+import com.hypixel.hytale.server.core.modules.entity.component.*
 import com.hypixel.hytale.server.core.modules.entity.player.PlayerSkinComponent
+import com.hypixel.hytale.server.core.modules.interaction.Interactions
 import com.hypixel.hytale.server.core.permissions.provider.HytalePermissionsProvider
 import com.hypixel.hytale.server.core.universe.PlayerRef
 import com.hypixel.hytale.server.core.universe.Universe
@@ -44,8 +45,7 @@ import java.util.function.BiConsumer
 import javax.annotation.Nonnull
 
 class RespawnPlayerNpcsCommand : AbstractPlayerCommand(
-    "respawnplayernpcs",
-    "Respawns all player NPCs at their location, re-importing their skin"
+    "respawnplayernpcs", "Respawns all player NPCs at their location, re-importing their skin"
 ) {
 
     private val nameArg = withOptionalArg("name", "Optional NPC name to filter", ArgTypes.STRING)
@@ -66,7 +66,8 @@ class RespawnPlayerNpcsCommand : AbstractPlayerCommand(
         val wardrobeComponent: PlayerWardrobeComponent?,
         val deliveryNpc: DeliveryNpc?,
         val existingSkin: PlayerSkin?,
-        val targetUsername: String
+        val targetUsername: String,
+        val isStatue: Boolean
     )
 
     override fun execute(
@@ -82,14 +83,11 @@ class RespawnPlayerNpcsCommand : AbstractPlayerCommand(
         val npcCompType = NPCEntity.getComponentType()
         val query = if (npcCompType != null) {
             Query.or(
-                PlayerNpcComponent.componentType,
-                VaultNpcComponent.componentType,
-                npcCompType
+                PlayerNpcComponent.componentType, VaultNpcComponent.componentType, npcCompType
             )
         } else {
             Query.or(
-                PlayerNpcComponent.componentType,
-                VaultNpcComponent.componentType
+                PlayerNpcComponent.componentType, VaultNpcComponent.componentType
             )
         }
 
@@ -106,17 +104,19 @@ class RespawnPlayerNpcsCommand : AbstractPlayerCommand(
                 val vaultComp = chunk.getComponent(i, VaultNpcComponent.componentType)
                 val playerNpcComp = chunk.getComponent(i, PlayerNpcComponent.componentType)
 
-                val isPlayerNpc = playerNpcComp != null ||
-                        (vaultComp != null && vaultComp.skinJson.isNotBlank()) ||
-                        AppearanceHelper.isPlayerNpc(entityRef, store)
+                val isPlayerNpc =
+                    playerNpcComp != null || (vaultComp != null && vaultComp.skinJson.isNotBlank()) || AppearanceHelper.isPlayerNpc(
+                        entityRef, store
+                    )
 
                 if (!isPlayerNpc) continue
 
                 val displayName = vaultComp?.displayName?.trim() ?: ""
 
                 if (!filterAll) {
-                    val matches = displayName.equals(targetFilter, ignoreCase = true) ||
-                            displayName.contains(targetFilter, ignoreCase = true)
+                    val matches = displayName.equals(targetFilter, ignoreCase = true) || displayName.contains(
+                        targetFilter, ignoreCase = true
+                    )
                     if (!matches) continue
                 }
 
@@ -149,44 +149,49 @@ class RespawnPlayerNpcsCommand : AbstractPlayerCommand(
 
                 val currentMainHand = vaultComp?.mainHandItem?.takeIf { it.isNotBlank() }
                     ?: playerNpcComp?.mainHandItem?.takeIf { it.isNotBlank() }
-                    ?: InventoryComponent.getItemInHand(store, entityRef)?.itemId
-                    ?: ""
+                    ?: InventoryComponent.getItemInHand(store, entityRef)?.itemId ?: ""
 
                 val utilityComp = chunk.getComponent(i, InventoryComponent.Utility.getComponentType())
                 val currentOffHand = vaultComp?.offHandItem?.takeIf { it.isNotBlank() }
-                    ?: playerNpcComp?.offHandItem?.takeIf { it.isNotBlank() }
-                    ?: utilityComp?.activeItem?.itemId
-                    ?: ""
+                    ?: playerNpcComp?.offHandItem?.takeIf { it.isNotBlank() } ?: utilityComp?.activeItem?.itemId ?: ""
 
-                val currentPose = vaultComp?.pose?.takeIf { it.isNotBlank() }
-                    ?: playerNpcComp?.pose?.takeIf { it.isNotBlank() }
-                    ?: chunk.getComponent(i, ActiveAnimationComponent.getComponentType())
-                        ?.activeAnimations?.getOrNull(AnimationSlot.Status.ordinal)
-                    ?: ""
+                val currentPose =
+                    vaultComp?.pose?.takeIf { it.isNotBlank() } ?: playerNpcComp?.pose?.takeIf { it.isNotBlank() }
+                    ?: chunk.getComponent(i, ActiveAnimationComponent.getComponentType())?.activeAnimations?.getOrNull(
+                        AnimationSlot.Status.ordinal
+                    ) ?: ""
+
+                val isStatue =
+                    vaultComp?.isStatue == true || playerNpcComp?.isStatue == true || deliveryComp == null || !deliveryComp.recipient()
 
                 val finalVaultComp = (vaultComp?.clone() as? VaultNpcComponent) ?: VaultNpcComponent()
                 finalVaultComp.mainHandItem = currentMainHand
                 finalVaultComp.offHandItem = currentOffHand
                 finalVaultComp.pose = currentPose
+                finalVaultComp.isStatue = isStatue
 
                 val finalPlayerNpcComp = (playerNpcComp?.clone() as? PlayerNpcComponent) ?: PlayerNpcComponent()
                 finalPlayerNpcComp.mainHandItem = currentMainHand
                 finalPlayerNpcComp.offHandItem = currentOffHand
                 finalPlayerNpcComp.pose = currentPose
+                finalPlayerNpcComp.isStatue = isStatue
 
                 snapshots.add(
                     NpcSnapshot(
                         oldRef = entityRef,
                         position = Vector3d(transform.position.x, transform.position.y, transform.position.z),
                         rotation = Rotation3f(transform.rotation),
-                        headRotation = Rotation3f(headRot),
+                        headRotation = if (isStatue) Rotation3f(0f, transform.rotation.yaw(), 0f) else Rotation3f(
+                            headRot
+                        ),
                         roleIndex = roleIndex,
                         vaultConfig = finalVaultComp,
                         playerConfig = finalPlayerNpcComp,
                         wardrobeComponent = wardrobeComp,
                         deliveryNpc = deliveryComp,
                         existingSkin = existingSkin,
-                        targetUsername = displayName
+                        targetUsername = displayName,
+                        isStatue = isStatue
                     )
                 )
             }
@@ -208,8 +213,7 @@ class RespawnPlayerNpcsCommand : AbstractPlayerCommand(
 
         // Asynchronously re-import skins for each snapshot
         val skinFutures = snapshots.map { snapshot ->
-            fetchUpdatedSkin(snapshot.targetUsername, snapshot.existingSkin)
-                .thenApply { skin -> Pair(snapshot, skin) }
+            fetchUpdatedSkin(snapshot.targetUsername, snapshot.existingSkin).thenApply { skin -> Pair(snapshot, skin) }
         }
 
         CompletableFuture.allOf(*skinFutures.toTypedArray()).thenAccept {
@@ -225,8 +229,17 @@ class RespawnPlayerNpcsCommand : AbstractPlayerCommand(
                         store.removeEntity(snapshot.oldRef, RemoveReason.REMOVE)
                     }
 
-                    // Resolve valid NPC role index
-                    var roleIdx = snapshot.roleIndex
+                    // Resolve valid NPC role index based on classification
+                    var roleIdx = AssetMapWithIndexes.NOT_FOUND
+                    if (snapshot.isStatue) {
+                        roleIdx = npcPlugin.getIndex("Shops/Statue_NPC")
+                    } else {
+                        roleIdx = npcPlugin.getIndex("Shops/Player_Recipient_NPC")
+                    }
+
+                    if (roleIdx == AssetMapWithIndexes.NOT_FOUND) {
+                        roleIdx = snapshot.roleIndex
+                    }
                     if (roleIdx == AssetMapWithIndexes.NOT_FOUND || npcPlugin.getName(roleIdx) == null) {
                         roleIdx = npcPlugin.getIndex("Player_NPC")
                         if (roleIdx == AssetMapWithIndexes.NOT_FOUND) {
@@ -261,17 +274,14 @@ class RespawnPlayerNpcsCommand : AbstractPlayerCommand(
                     } else null
 
                     val npcPair = npcPlugin.spawnEntity(
-                        store,
-                        roleIdx,
-                        snapshot.position,
-                        snapshot.headRotation,
-                        spawnModel
+                        store, roleIdx, snapshot.position, snapshot.headRotation, spawnModel
                     ) { _, newEntityRef, entityStore ->
                         entityStore.externalData.world.execute {
                             if (!newEntityRef.isValid) return@execute
 
                             // Set exact body rotation
-                            val transformComp = entityStore.getComponent(newEntityRef, TransformComponent.getComponentType())
+                            val transformComp =
+                                entityStore.getComponent(newEntityRef, TransformComponent.getComponentType())
                             if (transformComp != null) {
                                 entityStore.putComponent(
                                     newEntityRef,
@@ -280,9 +290,7 @@ class RespawnPlayerNpcsCommand : AbstractPlayerCommand(
                                 )
                             }
                             entityStore.putComponent(
-                                newEntityRef,
-                                HeadRotation.getComponentType(),
-                                HeadRotation(snapshot.headRotation)
+                                newEntityRef, HeadRotation.getComponentType(), HeadRotation(snapshot.headRotation)
                             )
 
                             // Apply PlayerSkinComponent
@@ -301,16 +309,26 @@ class RespawnPlayerNpcsCommand : AbstractPlayerCommand(
                             }
                             val finalModel = AppearanceHelper.buildFinalModel(validSkin, effectiveData)
                             if (finalModel != null) {
-                                entityStore.putComponent(newEntityRef, ModelComponent.getComponentType(), ModelComponent(finalModel))
-                                entityStore.putComponent(newEntityRef, PersistentModel.getComponentType(), PersistentModel(finalModel.toReference()))
+                                entityStore.putComponent(
+                                    newEntityRef, ModelComponent.getComponentType(), ModelComponent(finalModel)
+                                )
+                                entityStore.putComponent(
+                                    newEntityRef,
+                                    PersistentModel.getComponentType(),
+                                    PersistentModel(finalModel.toReference())
+                                )
                                 val attJson = AppearanceHelper.modelAttachmentsToJson(finalModel)
                                 snapshot.vaultConfig.attachmentsJson = attJson
                                 snapshot.playerConfig.attachmentsJson = attJson
                             }
 
                             // Apply VaultNpcComponent and PlayerNpcComponent
-                            entityStore.putComponent(newEntityRef, VaultNpcComponent.componentType, snapshot.vaultConfig)
-                            entityStore.putComponent(newEntityRef, PlayerNpcComponent.componentType, snapshot.playerConfig)
+                            entityStore.putComponent(
+                                newEntityRef, VaultNpcComponent.componentType, snapshot.vaultConfig
+                            )
+                            entityStore.putComponent(
+                                newEntityRef, PlayerNpcComponent.componentType, snapshot.playerConfig
+                            )
 
                             // Restore PlayerWardrobeComponent if previously equipped
                             val wardrobe = snapshot.wardrobeComponent
@@ -323,21 +341,53 @@ class RespawnPlayerNpcsCommand : AbstractPlayerCommand(
                                             entityStore.putComponent(newEntityRef, wType, clonedWardrobe)
                                         }
                                     }
-                                } catch (_: Throwable) {}
+                                } catch (_: Throwable) {
+                                }
                             }
 
-                            // Restore DeliveryNpc component if previously present
-                            val delivery = snapshot.deliveryNpc
-                            if (delivery != null) {
-                                try {
-                                    val dType = DeliveryNpc.getComponentType()
-                                    if (dType != null) {
-                                        val clonedDelivery = delivery.clone()
-                                        if (clonedDelivery != null) {
-                                            entityStore.putComponent(newEntityRef, dType, clonedDelivery)
-                                        }
-                                    }
-                                } catch (_: Throwable) {}
+                            if (snapshot.isStatue) {
+                                dev.rm20.thankmasvault.npc.statue.StatueOrientationService.ensureStatuePoint(
+                                    newEntityRef, entityStore, snapshot.vaultConfig
+                                )
+                                AppearanceHelper.applySavedAppearance(newEntityRef, entityStore, snapshot.vaultConfig)
+                            } else {
+                                val autoId = DeliveryNpc.generateId(snapshot.vaultConfig.displayName)
+                                val deliveryMarker = snapshot.deliveryNpc ?: DeliveryNpc(
+                                    "recipient", autoId, snapshot.vaultConfig.displayName
+                                )
+                                val dType = DeliveryNpc.getComponentType()
+                                if (dType != null) {
+                                    entityStore.putComponent(newEntityRef, dType, deliveryMarker)
+                                }
+
+                                val interactions = Interactions()
+                                interactions.setInteractionId(InteractionType.Use, "Parcel_Delivery_NPC")
+                                interactions.interactionHint = "server.interactionHints.Parcel_Recipient"
+                                entityStore.putComponent(newEntityRef, Interactions.getComponentType(), interactions)
+                                entityStore.putComponent(
+                                    newEntityRef, Interactable.getComponentType(), Interactable.INSTANCE
+                                )
+
+                                val deliveryService = ThankmasDeliveryPlugin.get()?.deliveryService()
+                                val uuidComp = entityStore.getComponent(newEntityRef, UUIDComponent.getComponentType())
+                                if (deliveryService != null && uuidComp != null) {
+                                    val destination = DeliveryStore.Destination(
+                                        deliveryMarker.id(),
+                                        deliveryMarker.name(),
+                                        world.name,
+                                        snapshot.position.x,
+                                        snapshot.position.y,
+                                        snapshot.position.z,
+                                        deliveryMarker.hint(),
+                                        uuidComp.uuid,
+                                        world.worldConfig.uuid,
+                                        false,
+                                        "",
+                                        deliveryMarker.bonusPoints
+                                    )
+                                    deliveryService.deliveryStore().register(destination)
+                                    deliveryService.observeRecipient(newEntityRef, deliveryMarker)
+                                }
                             }
 
                             // Equip weapons / items
@@ -348,15 +398,17 @@ class RespawnPlayerNpcsCommand : AbstractPlayerCommand(
                             AppearanceHelper.equipItems(newEntityRef, entityStore, mainHand, offHand)
 
                             // Re-apply pose
-                            val pose = snapshot.vaultConfig.pose.takeIf { it.isNotBlank() }
-                                ?: snapshot.playerConfig.pose
+                            val pose =
+                                snapshot.vaultConfig.pose.takeIf { it.isNotBlank() } ?: snapshot.playerConfig.pose
                             if (pose.isNotBlank() && !pose.equals("None", ignoreCase = true)) {
                                 AppearanceHelper.applyPose(newEntityRef, entityStore, pose)
                             }
 
                             // Re-apply nameplate
                             if (snapshot.vaultConfig.displayName.isNotBlank()) {
-                                NpcNameplateHelper.applyNameplate(newEntityRef, snapshot.vaultConfig.displayName, entityStore)
+                                NpcNameplateHelper.applyNameplate(
+                                    newEntityRef, snapshot.vaultConfig.displayName, entityStore
+                                )
                             }
                         }
                     }
@@ -394,7 +446,9 @@ class RespawnPlayerNpcsCommand : AbstractPlayerCommand(
         val onlinePlayer = universe?.let { u ->
             try {
                 u.getPlayerByUsername(cleanUsername, NameMatching.EXACT_IGNORE_CASE)
-                    ?: if (cleanUsername.contains(" ")) u.getPlayerByUsername(cleanUsername.split(" ")[0], NameMatching.EXACT_IGNORE_CASE) else null
+                    ?: if (cleanUsername.contains(" ")) u.getPlayerByUsername(
+                        cleanUsername.split(" ")[0], NameMatching.EXACT_IGNORE_CASE
+                    ) else null
             } catch (_: Throwable) {
                 null
             }

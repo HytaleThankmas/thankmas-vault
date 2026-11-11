@@ -1,0 +1,138 @@
+{
+  "Type": "Generic",
+  "StartState": "Idle",
+  "BusyStates": [
+    "$Interaction"
+  ],
+  "Appearance": "Player",
+  "MaxHealth": 100,
+  "Invulnerable": true,
+  "DefaultNPCAttitude": "Ignore",
+  "DefaultPlayerAttitude": "Neutral",
+  "DisableDamageGroups": [
+    "Self"
+  ],
+  "CombatConfig": {
+    "EntityEffects": [
+      "Immunity_Environmental"
+    ]
+  },
+  "Instructions": [
+    {
+      "Instructions": [
+        {
+          "Sensor": {
+            "Type": "State",
+            "State": "Idle"
+          },
+          "Instructions": [
+            {
+              "Sensor": {
+                "Type": "Player",
+                "Range": 10
+              },
+              "HeadMotion": {
+                "Type": "Watch"
+              },
+              "Continue": true
+            },
+            {
+              "Sensor": {
+                "Type": "Any"
+              },
+              "BodyMotion": {
+                "Type": "Nothing"
+              }
+            }
+          ]
+        },
+        {
+          "Sensor": {
+            "Type": "State",
+            "State": "$Interaction"
+          },
+          "Instructions": [
+            {
+              "Sensor": {
+                "Type": "Target",
+                "Range": 12
+              },
+              "HeadMotion": {
+                "Type": "Watch"
+              },
+              "Continue": true
+            },
+            {
+              "Sensor": {
+                "Type": "Any"
+              },
+              "BodyMotion": {
+                "Type": "Nothing"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "InteractionInstruction": {
+    "Instructions": [
+      {
+        "Sensor": {
+          "Type": "Not",
+          "Sensor": {
+            "Type": "thankmasDeliveryCanInteract",
+            "ViewSector": 360
+          }
+        },
+        "Actions": [
+          {
+            "Type": "SetInteractable",
+            "Interactable": false
+          }
+        ]
+      },
+      {
+        "Sensor": {
+          "Type": "thankmasDeliveryCanInteract",
+          "ViewSector": 360
+        },
+        "Actions": [
+          {
+            "Type": "SetInteractable",
+            "Interactable": true,
+            "Hint": "server.interactionHints.Parcel_Recipient"
+          }
+        ],
+        "Continue": true
+      },
+      {
+        "Sensor": {
+          "Type": "HasInteracted"
+        },
+        "Instructions": [
+          {
+            "Sensor": {
+              "Type": "Not",
+              "Sensor": {
+                "Type": "State",
+                "State": "$Interaction"
+              }
+            },
+            "Actions": [
+              {
+                "Type": "LockOnInteractionTarget"
+              },
+              {
+                "Type": "thankmasDeliveryNpcInteract"
+              },
+              {
+                "Type": "ReleaseTarget"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

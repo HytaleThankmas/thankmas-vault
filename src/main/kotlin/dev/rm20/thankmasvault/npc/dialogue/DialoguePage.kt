@@ -76,6 +76,9 @@ class DialoguePage(
 
                 commandBuilder.append("#ChoiceGrid", "NPC/ChoiceSlot.ui")
                 commandBuilder.set("$selector #ChoiceText.Text", choice.title)
+                choice.resolveIcon()?.let { iconPath ->
+                    commandBuilder.set("$selector #ZoneIconImage.AssetPath", iconPath)
+                }
 
                 eventBuilder.addEventBinding(
                     CustomUIEventBindingType.Activating, "$selector #ChoiceButton", EventData(
@@ -188,7 +191,7 @@ class DialoguePage(
     }
 
     private fun handleMouseEnter(data: DialoguePageData) {
-        if (isDismissed || !data.selector.startsWith("#ChoiceSlot")) return
+        if (isDismissed || (!data.selector.startsWith("#ChoiceGrid") && !data.selector.startsWith("#ChoiceSlot"))) return
         val commandBuilder = UICommandBuilder()
 
         if (currentHoveredSelector != null && currentHoveredSelector != data.selector) {
@@ -204,7 +207,7 @@ class DialoguePage(
     }
 
     private fun handleMouseExit(data: DialoguePageData) {
-        if (isDismissed || !data.selector.startsWith("#ChoiceSlot")) return
+        if (isDismissed || (!data.selector.startsWith("#ChoiceGrid") && !data.selector.startsWith("#ChoiceSlot"))) return
         val commandBuilder = UICommandBuilder()
 
         if (data.selector.isNotEmpty()) {

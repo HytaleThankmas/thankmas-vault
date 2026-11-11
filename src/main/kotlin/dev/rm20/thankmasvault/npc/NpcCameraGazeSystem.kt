@@ -10,12 +10,15 @@ import com.hypixel.hytale.component.query.Query
 import com.hypixel.hytale.component.system.tick.TickingSystem
 import com.hypixel.hytale.math.util.MathUtil
 import com.hypixel.hytale.server.core.modules.entity.component.HeadRotation
+import com.hypixel.hytale.server.core.modules.entity.component.Interactable
 import com.hypixel.hytale.server.core.modules.entity.component.ModelComponent
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent
 import com.hypixel.hytale.server.core.modules.entity.system.TransformSystems
+import com.hypixel.hytale.server.core.modules.interaction.Interactions
 import com.hypixel.hytale.server.core.modules.physics.util.PhysicsMath
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
 import com.hypixel.hytale.server.npc.systems.SteeringSystem
+import dev.rm20.thankmasvault.npc.player.AppearanceHelper
 import dev.rm20.thankmasvault.utils.CameraUtil
 import dev.rm20.thankmasvault.utils.getPoint
 import java.util.function.BiConsumer
@@ -30,6 +33,8 @@ class NpcCameraGazeSystem : TickingSystem<EntityStore>() {
         private val TRANSFORM_TYPE = TransformComponent.getComponentType()
         private val HEAD_ROT_TYPE = HeadRotation.getComponentType()
         private val MODEL_TYPE = ModelComponent.getComponentType()
+        private val INTERACTABLE_TYPE = Interactable.getComponentType()
+        private val INTERACTIONS_TYPE = Interactions.getComponentType()
     }
 
     private val dependencies: Set<Dependency<EntityStore>> = setOf(
@@ -48,13 +53,31 @@ class NpcCameraGazeSystem : TickingSystem<EntityStore>() {
     @Transient
     private var currentStore: Store<EntityStore>? = null
 
-    private val chunkConsumer = BiConsumer<ArchetypeChunk<EntityStore>, CommandBuffer<EntityStore>> { chunk, _ ->
+    private val chunkConsumer = BiConsumer<ArchetypeChunk<EntityStore>, CommandBuffer<EntityStore>> { chunk, buffer ->
         val store = currentStore ?: return@BiConsumer
         val size = chunk.size()
 
         for (i in 0 until size) {
             val ref = chunk.getReferenceTo(i)
             if (!ref.isValid) continue
+            if (AppearanceHelper.isStatue(ref, store)) {
+                val transform = chunk.getComponent(i, TRANSFORM_TYPE)
+                val headRotation = chunk.getComponent(i, HEAD_ROT_TYPE)
+                val vaultNpc = chunk.getComponent(i, VAULT_NPC_TYPE)
+                if (transform != null && headRotation != null) {
+                    if (vaultNpc != null) {
+                        dev.rm20.thankmasvault.npc.statue.StatueOrientationService.tickStatueOrientation(
+                            ref, store, vaultNpc, transform, headRotation
+                        )
+                    } else {
+                        val bodyYaw = transform.rotation.yaw()
+                        if (headRotation.rotation.pitch() != 0f || headRotation.rotation.yaw() != bodyYaw || headRotation.rotation.roll() != 0f) {
+                            headRotation.rotation.set(0f, bodyYaw, 0f)
+                        }
+                    }
+                }
+                continue
+            }
 
             val vaultNpc = chunk.getComponent(i, VAULT_NPC_TYPE) ?: continue
             val pointId = vaultNpc.pointId

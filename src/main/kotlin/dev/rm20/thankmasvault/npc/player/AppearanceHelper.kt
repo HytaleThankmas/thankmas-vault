@@ -1,31 +1,44 @@
 package dev.rm20.thankmasvault.npc.player
 
+import acorn.thankmasdelivery.component.DeliveryNpc
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import com.hypixel.hytale.assetstore.map.AssetMapWithIndexes
 import com.hypixel.hytale.component.Holder
 import com.hypixel.hytale.component.Ref
 import com.hypixel.hytale.component.Store
 import com.hypixel.hytale.protocol.AnimationSlot
+import com.hypixel.hytale.protocol.InteractionType
 import com.hypixel.hytale.protocol.PlayerSkin
 import com.hypixel.hytale.protocol.Rangef
 import com.hypixel.hytale.server.core.NameMatching
+import com.hypixel.hytale.server.core.asset.type.entityeffect.config.EntityEffect
 import com.hypixel.hytale.server.core.asset.type.model.config.Model
 import com.hypixel.hytale.server.core.asset.type.model.config.ModelAsset
 import com.hypixel.hytale.server.core.asset.type.model.config.ModelAttachment
 import com.hypixel.hytale.server.core.cosmetics.CosmeticsModule
+import com.hypixel.hytale.server.core.cosmetics.PlayerSkinGradientSet
 import com.hypixel.hytale.server.core.cosmetics.PlayerSkinPart
 import com.hypixel.hytale.server.core.entity.AnimationUtils
+import com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent
 import com.hypixel.hytale.server.core.inventory.InventoryComponent
 import com.hypixel.hytale.server.core.inventory.ItemStack
 import com.hypixel.hytale.server.core.inventory.container.SimpleItemContainer
 import com.hypixel.hytale.server.core.modules.entity.component.ActiveAnimationComponent
+import com.hypixel.hytale.server.core.modules.entity.component.HeadRotation
+import com.hypixel.hytale.server.core.modules.entity.component.Interactable
 import com.hypixel.hytale.server.core.modules.entity.component.ModelComponent
 import com.hypixel.hytale.server.core.modules.entity.component.PersistentModel
+import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent
 import com.hypixel.hytale.server.core.modules.entity.player.PlayerSkinComponent
+import com.hypixel.hytale.server.core.modules.interaction.Interactions
 import com.hypixel.hytale.server.core.universe.Universe
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
+import com.hypixel.hytale.server.npc.NPCPlugin
 import com.hypixel.hytale.server.npc.entities.NPCEntity
+import com.hypixel.hytale.server.npc.role.support.StateSupport
+import com.hypixel.hytale.server.npc.systems.RoleChangeSystem
 import dev.hardaway.wardrobe.impl.player.PlayerWardrobeComponent
 import dev.rm20.thankmasvault.assets.PoseAsset
 import dev.rm20.thankmasvault.npc.VaultNpcComponent
@@ -326,13 +339,13 @@ object AppearanceHelper {
             val npcEntity = holder.getComponent(npcComponentType)
             if (npcEntity != null) {
                 val roleName = npcEntity.roleName
-                if (roleName != null && roleName.contains("Player", ignoreCase = true)) {
+                if (roleName != null && (roleName.contains("Player", ignoreCase = true) || roleName.contains("Statue", ignoreCase = true))) {
                     return true
                 }
                 val role = npcEntity.role
                 if (role != null) {
                     val appearance = role.appearanceName
-                    if (appearance != null && appearance.contains("Player", ignoreCase = true)) {
+                    if (appearance != null && (appearance.contains("Player", ignoreCase = true) || appearance.contains("Statue", ignoreCase = true))) {
                         return true
                     }
                 }
@@ -340,6 +353,213 @@ object AppearanceHelper {
         }
 
         return false
+    }
+
+    fun isStatue(ref: Ref<EntityStore>, store: Store<EntityStore>): Boolean {
+        if (!ref.isValid) return false
+        val playerNpc = store.getComponent(ref, PlayerNpcComponent.componentType)
+        if (playerNpc != null && playerNpc.isStatue) return true
+        val vaultComp = store.getComponent(ref, VaultNpcComponent.componentType)
+        if (vaultComp != null && vaultComp.isStatue) return true
+
+        val npcCompType = NPCEntity.getComponentType()
+        if (npcCompType != null) {
+            val npcEntity = store.getComponent(ref, npcCompType)
+            if (npcEntity != null) {
+                val roleName = npcEntity.roleName
+                if (roleName != null && roleName.contains("Statue", ignoreCase = true)) {
+                    return true
+                }
+            }
+        }
+
+        // If it's a player NPC and not configured as a parcel recipient, it is classified as a statue (covers existing player NPCs)
+        if (isPlayerNpc(ref, store)) {
+            val dType = DeliveryNpc.getComponentType()
+            val deliveryNpc = if (dType != null) store.getComponent(ref, dType) else null
+            if (deliveryNpc == null || !deliveryNpc.recipient()) {
+                return true
+            }
+        }
+        return false
+    }
+
+    fun isStatue(holder: Holder<EntityStore>): Boolean {
+        val playerNpc = holder.getComponent(PlayerNpcComponent.componentType)
+        if (playerNpc != null && playerNpc.isStatue) return true
+        val vaultComp = holder.getComponent(VaultNpcComponent.componentType)
+        if (vaultComp != null && vaultComp.isStatue) return true
+
+        val npcCompType = NPCEntity.getComponentType()
+        if (npcCompType != null) {
+            val npcEntity = holder.getComponent(npcCompType)
+            if (npcEntity != null) {
+                val roleName = npcEntity.roleName
+                if (roleName != null && roleName.contains("Statue", ignoreCase = true)) {
+                    return true
+                }
+            }
+        }
+
+        if (isPlayerNpc(holder)) {
+            val dType = DeliveryNpc.getComponentType()
+            val deliveryNpc = if (dType != null) holder.getComponent(dType) else null
+            if (deliveryNpc == null || !deliveryNpc.recipient()) {
+                return true
+            }
+        }
+        return false
+    }
+
+    fun applyStatueOverlay(ref: Ref<EntityStore>, store: Store<EntityStore>, overlayName: String? = "stone") {
+        if (!ref.isValid) return
+        var controller = store.getComponent(ref, EffectControllerComponent.getComponentType())
+        if (controller == null) {
+            controller = EffectControllerComponent()
+            store.putComponent(ref, EffectControllerComponent.getComponentType(), controller)
+        }
+
+        clearStatueOverlay(ref, store)
+
+        val cleanOverlay = overlayName?.trim()?.lowercase() ?: "stone"
+        if (cleanOverlay.isBlank() || cleanOverlay == "none") {
+            return
+        }
+
+        val candidates = when (cleanOverlay) {
+            "gold" -> listOf("Statue_Gold", "Statue/Statue_Gold")
+            else -> listOf("Statue_Stone", "Statue/Statue_Stone")
+        }
+
+        var effect: EntityEffect? = null
+        for (cand in candidates) {
+            effect = EntityEffect.getAssetMap().getAsset(cand)
+            if (effect != null) break
+        }
+        if (effect != null) {
+            controller.addEffect(ref, effect, store)
+        }
+    }
+
+    fun clearStatueOverlay(ref: Ref<EntityStore>, store: Store<EntityStore>) {
+        if (!ref.isValid) return
+        val controller = store.getComponent(ref, EffectControllerComponent.getComponentType())
+        if (controller != null) {
+            val allEffectKeys = listOf(
+                "Statue_Stone", "Statue/Statue_Stone", "Stoneskin", "Tests/Stoneskin",
+                "Statue_Bronze", "Statue/Statue_Bronze",
+                "Statue_Gold", "Statue/Statue_Gold"
+            )
+            for (effectKey in allEffectKeys) {
+                val idx = EntityEffect.getAssetMap().getIndex(effectKey)
+                if (idx != AssetMapWithIndexes.NOT_FOUND && controller.activeEffects.containsKey(idx)) {
+                    controller.removeEffect(ref, idx, store)
+                }
+            }
+        }
+
+        // Restore active NPC role if it was set to Statue_NPC
+        val npcCompType = NPCEntity.getComponentType()
+        if (npcCompType != null) {
+            val npcEntity = store.getComponent(ref, npcCompType)
+            if (npcEntity != null && npcEntity.roleName?.contains("Statue", ignoreCase = true) == true) {
+                val npcPlugin = NPCPlugin.get()
+                var normalRoleIdx = npcPlugin.getIndex("Player_Recipient_NPC")
+                if (normalRoleIdx == AssetMapWithIndexes.NOT_FOUND) {
+                    normalRoleIdx = npcPlugin.getIndex("Shops/Player_Recipient_NPC")
+                }
+                if (normalRoleIdx == AssetMapWithIndexes.NOT_FOUND) {
+                    normalRoleIdx = npcPlugin.getIndex("Player_NPC")
+                }
+                if (normalRoleIdx == AssetMapWithIndexes.NOT_FOUND) {
+                    normalRoleIdx = npcPlugin.getIndex("Shops/Player_NPC")
+                }
+                if (normalRoleIdx != AssetMapWithIndexes.NOT_FOUND) {
+                    val role = npcEntity.role
+                    if (role != null) {
+                        try {
+                            RoleChangeSystem.requestRoleChange(ref, role, normalRoleIdx, false, "Idle", null, false, store)
+                        } catch (_: Throwable) {
+                            npcEntity.setRoleIndex(normalRoleIdx)
+                            npcEntity.setRoleName(npcPlugin.getName(normalRoleIdx))
+                        }
+                    } else {
+                        npcEntity.setRoleIndex(normalRoleIdx)
+                        npcEntity.setRoleName(npcPlugin.getName(normalRoleIdx))
+                    }
+                }
+            }
+        }
+    }
+
+    fun enforceStatueState(ref: Ref<EntityStore>, store: Store<EntityStore>, overlayName: String? = "stone") {
+        if (!ref.isValid) return
+
+        val npcCompType = NPCEntity.getComponentType()
+        if (npcCompType != null) {
+            val npcEntity = store.getComponent(ref, npcCompType)
+            if (npcEntity != null) {
+                val npcPlugin = NPCPlugin.get()
+                var statueRoleIdx = npcPlugin.getIndex("Statue_NPC")
+                if (statueRoleIdx == AssetMapWithIndexes.NOT_FOUND) {
+                    statueRoleIdx = npcPlugin.getIndex("Shops/Statue_NPC")
+                }
+                if (statueRoleIdx != AssetMapWithIndexes.NOT_FOUND && npcEntity.roleIndex != statueRoleIdx) {
+                    val role = npcEntity.role
+                    if (role != null) {
+                        try {
+                            RoleChangeSystem.requestRoleChange(ref, role, statueRoleIdx, false, "Idle", null, false, store)
+                        } catch (_: Throwable) {
+                            npcEntity.setRoleIndex(statueRoleIdx)
+                            npcEntity.setRoleName(npcPlugin.getName(statueRoleIdx))
+                        }
+                    } else {
+                        npcEntity.setRoleIndex(statueRoleIdx)
+                        npcEntity.setRoleName(npcPlugin.getName(statueRoleIdx))
+                    }
+                }
+            }
+        }
+
+        val transform = store.getComponent(ref, TransformComponent.getComponentType())
+        val headRot = store.getComponent(ref, HeadRotation.getComponentType())
+        if (transform != null && headRot != null) {
+            val bodyYaw = transform.rotation.yaw()
+            headRot.rotation.set(0f, bodyYaw, 0f)
+        }
+
+        try {
+            store.tryRemoveComponent(ref, Interactable.getComponentType())
+            store.tryRemoveComponent(ref, Interactions.getComponentType())
+        } catch (_: IllegalStateException) {
+            try {
+                store.externalData.world.execute {
+                    if (ref.isValid) {
+                        store.tryRemoveComponent(ref, Interactable.getComponentType())
+                        store.tryRemoveComponent(ref, Interactions.getComponentType())
+                    }
+                }
+            } catch (_: Throwable) {}
+        }
+        try {
+            val stateSupport = store.getComponent(ref, StateSupport.getComponentType())
+            if (stateSupport != null) {
+                val field = StateSupport::class.java.getDeclaredField("interactablePlayers")
+                field.isAccessible = true
+                val set = field.get(stateSupport) as? MutableSet<*>
+                set?.clear()
+            }
+        } catch (_: Throwable) {}
+
+        val pose = store.getComponent(ref, PlayerNpcComponent.componentType)?.pose
+            ?: store.getComponent(ref, VaultNpcComponent.componentType)?.pose
+        if (pose.isNullOrBlank() || pose.equals("None", ignoreCase = true)) {
+            for (slot in AnimationSlot.VALUES) {
+                AnimationUtils.stopAnimation(ref, slot, true, store)
+            }
+        }
+
+        applyStatueOverlay(ref, store, overlayName)
     }
 
     fun applyModelToNpc(
@@ -571,6 +791,126 @@ object AppearanceHelper {
         return skin
     }
 
+    fun applyGradientMappingToSkin(
+        skin: PlayerSkin,
+        overlay: String = "stone"
+    ): PlayerSkin {
+        val cosmetics = try {
+            CosmeticsModule.get()
+        } catch (_: Throwable) {
+            null
+        } ?: return skin
+
+        val registry = cosmetics.registry ?: return skin
+
+        fun selectGradientKey(gradientSetName: String, gSet: PlayerSkinGradientSet, overlayType: String): String? {
+            val keys = gSet.gradients.keys
+            if (keys.isEmpty()) return null
+
+            val targetKeys: List<String> = when (overlayType.lowercase()) {
+                "gold" -> when (gradientSetName.lowercase()) {
+                    "hair" -> listOf("BlondCaramel", "BlondPlatinum", "BlondSand", "Blond")
+                    "skin" -> listOf("37", "09", "10", "48", "08")
+                    "jean_generic" -> listOf("Maroon", "GreyLight")
+                    "eyes_gradient" -> listOf("Yellow", "Honey")
+                    "ornamented_metal" -> listOf("Gold_Red")
+                    else -> listOf("Yellow", "Cream", "Beige", "Orange")
+                }
+                else -> { // "stone" / default
+                    when (gradientSetName.lowercase()) {
+                        "hair" -> listOf("Grey", "GreyAsh", "Black", "PitchBlack", "White", "MoldyWhite")
+                        "skin" -> listOf("28", "50", "52", "48", "08")
+                        "jean_generic" -> listOf("GreyLight", "GreyDark", "GreyBlue", "Black")
+                        "eyes_gradient" -> listOf("Grey", "White", "Black")
+                        "ornamented_metal" -> listOf("Iron_Black", "Silver_Blue")
+                        else -> listOf("Grey", "GreyLight", "GreyDark", "Charcoal", "Black", "White")
+                    }
+                }
+            }
+
+            for (target in targetKeys) {
+                val matched = keys.firstOrNull { it.equals(target, ignoreCase = true) }
+                if (matched != null) return matched
+            }
+
+            val fallbacks = when (overlayType.lowercase()) {
+                "gold" -> listOf("Yellow", "Gold", "Light", "White", "Grey")
+                else -> listOf("Grey", "Slate", "Dark", "Black", "White")
+            }
+            for (fb in fallbacks) {
+                val matched = keys.firstOrNull { it.contains(fb, ignoreCase = true) }
+                if (matched != null) return matched
+            }
+
+            return keys.firstOrNull()
+        }
+
+        fun remapAttachment(rawId: String?, map: Map<String, PlayerSkinPart>, overlayType: String): String? {
+            if (rawId.isNullOrBlank()) return null
+            val idParts = rawId.split('.')
+            val partName = idParts[0]
+
+            val partKey = if (map.containsKey(partName)) {
+                partName
+            } else {
+                map.keys.firstOrNull {
+                    it.equals(partName, ignoreCase = true) ||
+                            it.equals(partName.replace(' ', '_'), ignoreCase = true) ||
+                            it.replace("[_ ]".toRegex(), "").equals(partName.replace("[_ ]".toRegex(), ""), ignoreCase = true)
+                }
+            } ?: map.values.firstOrNull { it.id.equals(partName, ignoreCase = true) }?.id ?: return rawId
+
+            val skinPart = map[partKey] ?: return rawId
+            val rawVariant = if (idParts.size > 2 && idParts[2].isNotBlank()) idParts[2] else null
+
+            val gradientSetName = skinPart.gradientSet
+            if (gradientSetName != null) {
+                val gSet = registry.gradientSets[gradientSetName]
+                if (gSet != null) {
+                    val newTex = selectGradientKey(gradientSetName, gSet, overlayType)
+                    if (newTex != null) {
+                        return if (rawVariant != null) "$partKey.$newTex.$rawVariant" else "$partKey.$newTex"
+                    }
+                }
+            } else {
+                val availableTextures = if (rawVariant != null && skinPart.variants != null) {
+                    skinPart.variants[rawVariant]?.textures?.keys ?: emptySet()
+                } else {
+                    skinPart.textures?.keys ?: emptySet()
+                }
+                val bestTex = when (overlayType.lowercase()) {
+                    "gold" -> availableTextures.firstOrNull { it.contains("Yellow", ignoreCase = true) || it.contains("Gold", ignoreCase = true) }
+                    else -> availableTextures.firstOrNull { it.contains("Grey", ignoreCase = true) || it.contains("Stone", ignoreCase = true) || it.contains("Black", ignoreCase = true) }
+                }
+                if (bestTex != null) {
+                    return if (rawVariant != null) "$partKey.$bestTex.$rawVariant" else "$partKey.$bestTex"
+                }
+            }
+            return rawId
+        }
+
+        val remapped = PlayerSkin(skin)
+        remapped.haircut = remapAttachment(remapped.haircut, registry.haircuts, overlay)
+        remapped.eyebrows = remapAttachment(remapped.eyebrows, registry.eyebrows, overlay)
+        remapped.facialHair = remapAttachment(remapped.facialHair, registry.facialHairs, overlay)
+        remapped.bodyCharacteristic = remapAttachment(remapped.bodyCharacteristic, registry.bodyCharacteristics, overlay)
+        remapped.underwear = remapAttachment(remapped.underwear, registry.underwear, overlay)
+        remapped.eyes = remapAttachment(remapped.eyes, registry.eyes, overlay)
+        remapped.pants = remapAttachment(remapped.pants, registry.pants, overlay)
+        remapped.overpants = remapAttachment(remapped.overpants, registry.overpants, overlay)
+        remapped.undertop = remapAttachment(remapped.undertop, registry.undertops, overlay)
+        remapped.overtop = remapAttachment(remapped.overtop, registry.overtops, overlay)
+        remapped.shoes = remapAttachment(remapped.shoes, registry.shoes, overlay)
+        remapped.headAccessory = remapAttachment(remapped.headAccessory, registry.headAccessories, overlay)
+        remapped.faceAccessory = remapAttachment(remapped.faceAccessory, registry.faceAccessories, overlay)
+        remapped.earAccessory = remapAttachment(remapped.earAccessory, registry.earAccessories, overlay)
+        remapped.skinFeature = remapAttachment(remapped.skinFeature, registry.skinFeatures, overlay)
+        remapped.gloves = remapAttachment(remapped.gloves, registry.gloves, overlay)
+        remapped.cape = remapAttachment(remapped.cape, registry.capes, overlay)
+
+        return ensureValidSkin(remapped)
+    }
+
     fun playerSkinToJson(skin: PlayerSkin): String {
         val json = JsonObject()
         skin.bodyCharacteristic?.let { json.addProperty("bodyCharacteristic", it) }
@@ -726,7 +1066,9 @@ object AppearanceHelper {
 
         // Attachments: if custom attachments were saved (e.g. from Wardrobe or custom models), use them;
         // otherwise default to the attachments created by CosmeticsModule from the skin.
-        val finalAttachments = if (savedData.attachments != null && savedData.attachments.isNotEmpty()) {
+        val finalAttachments = if (baseFromSkin != null && baseModel.attachments != null && baseModel.attachments.isNotEmpty()) {
+            baseModel.attachments
+        } else if (savedData.attachments != null && savedData.attachments.isNotEmpty()) {
             savedData.attachments
         } else {
             baseModel.attachments
@@ -804,16 +1146,27 @@ object AppearanceHelper {
         store.externalData.world.execute {
             if (!npcRef.isValid) return@execute
 
-            if (playerSkin != null) {
-                val newSkinComp = PlayerSkinComponent(playerSkin)
+            val statue = isStatue(npcRef, store)
+            val config = store.getComponent(npcRef, VaultNpcComponent.componentType)
+            val overlay = config?.statueOverlay?.ifBlank { "stone" } ?: "stone"
+            val displaySkin = if (statue && overlay != "none" && playerSkin != null) {
+                applyGradientMappingToSkin(playerSkin, overlay)
+            } else {
+                playerSkin
+            }
+
+            if (displaySkin != null) {
+                val newSkinComp = PlayerSkinComponent(displaySkin)
                 newSkinComp.setNetworkOutdated()
                 store.putComponent(npcRef, PlayerSkinComponent.getComponentType(), newSkinComp)
             }
 
-            val modelToApply = if (playerModel != null) {
+            val modelToApply = if (statue && displaySkin != null) {
+                CosmeticsModule.get().createModel(displaySkin)
+            } else if (playerModel != null) {
                 Model(playerModel)
-            } else if (playerSkin != null) {
-                CosmeticsModule.get().createModel(playerSkin)
+            } else if (displaySkin != null) {
+                CosmeticsModule.get().createModel(displaySkin)
             } else {
                 null
             }
@@ -862,6 +1215,10 @@ object AppearanceHelper {
                 config.offHandItem = offHand
                 store.putComponent(npcRef, VaultNpcComponent.componentType, config)
             }
+
+            if (statue) {
+                enforceStatueState(npcRef, store, overlay)
+            }
         }
         return true
     }
@@ -876,11 +1233,20 @@ object AppearanceHelper {
         store.externalData.world.execute {
             if (!npcRef.isValid) return@execute
 
-            val newSkinComp = PlayerSkinComponent(validSkin)
+            val statue = isStatue(npcRef, store)
+            val config = store.getComponent(npcRef, VaultNpcComponent.componentType)
+            val overlay = config?.statueOverlay?.ifBlank { "stone" } ?: "stone"
+            val displaySkin = if (statue && overlay != "none") {
+                applyGradientMappingToSkin(validSkin, overlay)
+            } else {
+                validSkin
+            }
+
+            val newSkinComp = PlayerSkinComponent(displaySkin)
             newSkinComp.setNetworkOutdated()
             store.putComponent(npcRef, PlayerSkinComponent.getComponentType(), newSkinComp)
 
-            val newModel = CosmeticsModule.get().createModel(validSkin)
+            val newModel = CosmeticsModule.get().createModel(displaySkin)
             if (newModel != null) {
                 store.putComponent(npcRef, ModelComponent.getComponentType(), ModelComponent(newModel))
                 store.putComponent(npcRef, PersistentModel.getComponentType(), PersistentModel(newModel.toReference()))
@@ -898,15 +1264,19 @@ object AppearanceHelper {
             store.putComponent(npcRef, PlayerNpcComponent.componentType, playerNpcComp)
 
             if (saveToConfig) {
-                var config = store.getComponent(npcRef, VaultNpcComponent.componentType)
-                if (config == null) {
-                    config = VaultNpcComponent()
+                var c = store.getComponent(npcRef, VaultNpcComponent.componentType)
+                if (c == null) {
+                    c = VaultNpcComponent()
                 }
-                config.skinJson = playerSkinToJson(validSkin)
+                c.skinJson = playerSkinToJson(validSkin)
                 if (newModel != null) {
-                    config.attachmentsJson = modelAttachmentsToJson(newModel)
+                    c.attachmentsJson = modelAttachmentsToJson(newModel)
                 }
-                store.putComponent(npcRef, VaultNpcComponent.componentType, config)
+                store.putComponent(npcRef, VaultNpcComponent.componentType, c)
+            }
+
+            if (statue) {
+                enforceStatueState(npcRef, store, overlay)
             }
         }
     }
@@ -961,13 +1331,22 @@ object AppearanceHelper {
                     pComp.pose = config.pose
                     pComp.mainHandItem = config.mainHandItem
                     pComp.offHandItem = config.offHandItem
+                    pComp.isStatue = config.isStatue
+                    pComp.statueOverlay = config.statueOverlay
                     store.putComponent(npcRef, PlayerNpcComponent.componentType, pComp)
                 }
 
                 val skinJson = config.skinJson
                 val attachmentsJson = config.attachmentsJson
 
-                val skin = if (skinJson.isNotBlank()) jsonToPlayerSkin(skinJson) else null
+                val rawSkin = if (skinJson.isNotBlank()) jsonToPlayerSkin(skinJson) else null
+                val statue = isStatue(npcRef, store)
+                val skin = if (statue && rawSkin != null && config.statueOverlay != "none") {
+                    applyGradientMappingToSkin(rawSkin, config.statueOverlay)
+                } else {
+                    rawSkin
+                }
+
                 if (skin != null) {
                     val skinComp = PlayerSkinComponent(skin)
                     skinComp.setNetworkOutdated()
@@ -985,6 +1364,12 @@ object AppearanceHelper {
                     applyPose(npcRef, store, config.pose)
                 }
                 equipItems(npcRef, store, config.mainHandItem, config.offHandItem)
+
+                if (statue) {
+                    enforceStatueState(npcRef, store, config.statueOverlay)
+                } else {
+                    clearStatueOverlay(npcRef, store)
+                }
             } else {
                 // Non-player NPC: only apply custom model if explicitly configured
                 if (config.model.isNotBlank()) {
@@ -1007,13 +1392,22 @@ object AppearanceHelper {
                 pComp.pose = config.pose
                 pComp.mainHandItem = config.mainHandItem
                 pComp.offHandItem = config.offHandItem
+                pComp.isStatue = config.isStatue
+                pComp.statueOverlay = config.statueOverlay
                 holder.putComponent(PlayerNpcComponent.componentType, pComp)
             }
 
             val skinJson = config.skinJson
             val attachmentsJson = config.attachmentsJson
 
-            val skin = if (skinJson.isNotBlank()) jsonToPlayerSkin(skinJson) else null
+            val rawSkin = if (skinJson.isNotBlank()) jsonToPlayerSkin(skinJson) else null
+            val statue = isStatue(holder)
+            val skin = if (statue && rawSkin != null && config.statueOverlay != "none") {
+                applyGradientMappingToSkin(rawSkin, config.statueOverlay)
+            } else {
+                rawSkin
+            }
+
             if (skin != null) {
                 val skinComp = PlayerSkinComponent(skin)
                 skinComp.setNetworkOutdated()
@@ -1039,6 +1433,34 @@ object AppearanceHelper {
                     holder.putComponent(ActiveAnimationComponent.getComponentType(), activeAnim)
                 }
                 activeAnim.setPlayingAnimation(AnimationSlot.Status, matchedPose)
+            }
+
+            if (statue) {
+                holder.tryRemoveComponent(Interactable.getComponentType())
+                holder.tryRemoveComponent(Interactions.getComponentType())
+
+                val transform = holder.getComponent(TransformComponent.getComponentType())
+                val headRot = holder.getComponent(HeadRotation.getComponentType())
+                if (transform != null && headRot != null) {
+                    headRot.rotation.set(0f, transform.rotation.yaw(), 0f)
+                }
+
+                val npcCompType = NPCEntity.getComponentType()
+                if (npcCompType != null) {
+                    val npcEntity = holder.getComponent(npcCompType)
+                    if (npcEntity != null) {
+                        val npcPlugin = NPCPlugin.get()
+                        var statueRoleIdx = npcPlugin.getIndex("Statue_NPC")
+                        if (statueRoleIdx == AssetMapWithIndexes.NOT_FOUND) {
+                            statueRoleIdx = npcPlugin.getIndex("Shops/Statue_NPC")
+                        }
+                        if (statueRoleIdx != AssetMapWithIndexes.NOT_FOUND) {
+                            npcEntity.setRoleIndex(statueRoleIdx)
+                            npcEntity.setRoleName(npcPlugin.getName(statueRoleIdx))
+                            npcEntity.setRole(null)
+                        }
+                    }
+                }
             }
         } else {
             // Non-player NPC: only apply custom model if explicitly configured

@@ -1,0 +1,24 @@
+{
+  "SwitchTo": "PostColor",
+  "EffectDirection": "None",
+  "AnimationDuration": 0.0,
+  "AnimationRange": {
+    "X": 0.0,
+    "Y": 1.0
+  },
+  "HighlightColor": "#a87847",
+  "HighlightThickness": 0.5,
+  "UseBloomOnHighlight": false,
+  "UseProgessiveHighlight": false,
+  "NoiseScale": {
+    "X": 100.0,
+    "Y": 100.0
+  },
+  "NoiseScrollSpeed": {
+    "X": 0.0,
+    "Y": 0.0
+  },
+  "PostColor": "#78512b",
+  "PostColorOpacity": 0.4,
+  "LoopOption": "PlayOnce"
+}

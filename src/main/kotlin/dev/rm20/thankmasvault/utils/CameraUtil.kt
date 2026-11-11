@@ -12,9 +12,10 @@ import com.hypixel.hytale.server.core.modules.physics.util.PhysicsMath
 import com.hypixel.hytale.server.core.universe.PlayerRef
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
 import com.hypixel.hytale.server.npc.role.support.StateSupport
+import dev.rm20.thankmasvault.npc.player.AppearanceHelper
 import org.joml.Vector3d
 import org.joml.Vector3f
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 object CameraUtil {
@@ -81,9 +82,12 @@ object CameraUtil {
         hideNearbyPlayers(playerRef, pointEntry.position, hideRadius)
 
         if (npcRef != null && npcRef.isValid) {
-            activeNpcForPlayer[playerRef.uuid] = npcRef
-            activeNpcCameraPositions[npcRef] = pointEntry.position
-            orientNpcTowardsCamera(npcRef, pointEntry.position)
+            val isStatue = AppearanceHelper.isStatue(npcRef, npcRef.store)
+            if (!isStatue) {
+                activeNpcForPlayer[playerRef.uuid] = npcRef
+                activeNpcCameraPositions[npcRef] = pointEntry.position
+                orientNpcTowardsCamera(npcRef, pointEntry.position)
+            }
         }
 
         setFixedCamera(

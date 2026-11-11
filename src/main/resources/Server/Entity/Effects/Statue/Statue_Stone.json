@@ -1,0 +1,10 @@
+{
+  "Infinite": true,
+  "RemovalBehavior": "Infinite",
+  "ApplicationEffects": {
+    "ModelVFXId": "Statue_Stone",
+    "EntityTopTint": "#85898c",
+    "EntityBottomTint": "#6b6f72"
+  },
+  "OverlapBehavior": "Ignore"
+}

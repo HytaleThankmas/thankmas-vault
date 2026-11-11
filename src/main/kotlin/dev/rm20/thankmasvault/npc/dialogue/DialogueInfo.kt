@@ -42,9 +42,38 @@ class Content(
         get() = TranslationUtil.resolve(field) ?: ""
 }
 
+enum class DialogueChoiceIcon(val assetPath: String) {
+    Speach("UI/Custom/NPC/Images/Speach.png"),
+    Question("UI/Custom/NPC/Images/Question.png"),
+    Doors("UI/Custom/NPC/Images/Doors.png"),
+    Container("UI/Custom/NPC/Images/Container.png");
+
+    companion object {
+        fun resolve(input: String?): String? {
+            if (input.isNullOrBlank()) return null
+            val trimmed = input.trim()
+            val matched = entries.firstOrNull { it.name.equals(trimmed, ignoreCase = true) }
+            if (matched != null) return matched.assetPath
+
+            val normalized = trimmed.removeSuffix(".png")
+            val matchedWithoutExt = entries.firstOrNull { it.name.equals(normalized, ignoreCase = true) }
+            if (matchedWithoutExt != null) return matchedWithoutExt.assetPath
+
+            if (trimmed.contains("/")) {
+                return if (trimmed.endsWith(".png", ignoreCase = true)) trimmed else "$trimmed.png"
+            }
+            return "UI/Custom/NPC/Images/${trimmed.removeSuffix(".png")}.png"
+        }
+    }
+}
+
 @SerializableObject
 class Choice(
     var title: String = "",
     var next: String? = null,
     var action: String? = null,
-)
+    var zoneIconImage: String? = null,
+    var icon: String? = null,
+) {
+    fun resolveIcon(): String? = DialogueChoiceIcon.resolve(zoneIconImage ?: icon)
+}

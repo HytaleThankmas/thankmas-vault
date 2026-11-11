@@ -19,6 +19,8 @@ class VaultNpcComponent : Component<EntityStore> {
     var pose: String = ""
     var mainHandItem: String = ""
     var offHandItem: String = ""
+    var isStatue: Boolean = false
+    var statueOverlay: String = "stone"
 
     override fun clone(): Component<EntityStore> {
         val copy = VaultNpcComponent()
@@ -33,6 +35,8 @@ class VaultNpcComponent : Component<EntityStore> {
         copy.pose = this.pose
         copy.mainHandItem = this.mainHandItem
         copy.offHandItem = this.offHandItem
+        copy.isStatue = this.isStatue
+        copy.statueOverlay = this.statueOverlay
         return copy
     }
 

@@ -1,0 +1,10 @@
+{
+  "Infinite": true,
+  "RemovalBehavior": "Infinite",
+  "ApplicationEffects": {
+    "ModelVFXId": "Statue_Gold",
+    "EntityTopTint": "#e5b73b",
+    "EntityBottomTint": "#b7871b"
+  },
+  "OverlapBehavior": "Ignore"
+}

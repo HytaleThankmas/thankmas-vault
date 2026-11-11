@@ -6,19 +6,23 @@
         "Choices": [
           {
             "Title": "How do I fish?",
-            "Next": "howtofish"
+            "Next": "howtofish",
+            "Icon": "Question"
           },
           {
             "Action": "fishMarket",
-            "Title": "I want to sell my fish"
+            "Title": "I want to sell my fish",
+            "Icon": "Container"
           },
           {
             "Action": "fishbag",
-            "Title": "I want to see my fishes"
+            "Title": "I want to see my fishes",
+            "Icon": "Container"
           },
           {
             "Action": "rodUpgrade",
-            "Title": "I want to upgrade my fishing rod"
+            "Title": "I want to upgrade my fishing rod",
+            "Icon": "Container"
           }
         ],
         "Content": [

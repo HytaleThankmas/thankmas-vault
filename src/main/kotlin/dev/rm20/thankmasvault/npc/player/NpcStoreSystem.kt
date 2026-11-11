@@ -34,5 +34,11 @@ class NpcStoreSystem : RefSystem<EntityStore>() {
         store: Store<EntityStore>,
         commandBuffer: CommandBuffer<EntityStore>
     ) {
+        if (reason != RemoveReason.UNLOAD) {
+            val config = store.getComponent(ref, VaultNpcComponent.componentType)
+            if (config != null && config.isStatue && config.pointId.isNotBlank()) {
+                dev.rm20.thankmasvault.npc.statue.StatueOrientationService.removeStatuePoint(config.pointId, store)
+            }
+        }
     }
 }

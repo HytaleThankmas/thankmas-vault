@@ -1,0 +1,65 @@
+{
+  "Type": "Generic",
+  "StartState": "Idle",
+  "Appearance": "Player",
+  "MaxHealth": 100,
+  "Invulnerable": true,
+  "DefaultNPCAttitude": "Ignore",
+  "DefaultPlayerAttitude": "Ignore",
+  "OverrideHeadPitchAngle": true,
+  "HeadPitchAngleRange": [
+    0.0,
+    0.0
+  ],
+  "DisableDamageGroups": [
+    "Self"
+  ],
+  "CombatConfig": {
+    "EntityEffects": [
+      "Immunity_Environmental"
+    ]
+  },
+  "MotionControllerList": [
+    {
+      "Type": "Walk",
+      "MaxWalkSpeed": 0.0001,
+      "MinWalkSpeed": 0.0,
+      "MaxWalkTurnAngle": 0.0,
+      "BlendRestTurnAngle": 0.0,
+      "BlendRestRelativeSpeed": 0.0,
+      "MaxRotationSpeed": 0.0001,
+      "MaxHeadRotationSpeed": 0.0,
+      "Acceleration": 0.0001,
+      "Gravity": 10.0
+    }
+  ],
+  "Instructions": [
+    {
+      "Sensor": {
+        "Type": "Any"
+      },
+      "BodyMotion": {
+        "Type": "Nothing"
+      },
+      "HeadMotion": {
+        "Type": "Nothing"
+      }
+    }
+  ],
+  "InteractionInstruction": {
+    "Instructions": [
+      {
+        "Sensor": {
+          "Type": "Any"
+        },
+        "Actions": [
+          {
+            "Type": "SetInteractable",
+            "Interactable": false,
+            "ShowPrompt": false
+          }
+        ]
+      }
+    ]
+  }
+}

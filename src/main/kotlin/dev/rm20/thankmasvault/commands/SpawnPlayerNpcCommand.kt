@@ -1,9 +1,13 @@
 package dev.rm20.thankmasvault.commands
 
+import acorn.thankmasdelivery.ThankmasDeliveryPlugin
+import acorn.thankmasdelivery.component.DeliveryNpc
+import acorn.thankmasdelivery.persistence.DeliveryStore
 import com.hypixel.hytale.assetstore.map.AssetMapWithIndexes
 import com.hypixel.hytale.component.Ref
 import com.hypixel.hytale.component.Store
 import com.hypixel.hytale.math.vector.Rotation3f
+import com.hypixel.hytale.protocol.InteractionType
 import com.hypixel.hytale.server.core.Message
 import com.hypixel.hytale.server.core.NameMatching
 import com.hypixel.hytale.server.core.asset.type.model.config.Model
@@ -11,11 +15,14 @@ import com.hypixel.hytale.server.core.command.system.CommandContext
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayerCommand
 import com.hypixel.hytale.server.core.cosmetics.CosmeticsModule
+import com.hypixel.hytale.server.core.entity.UUIDComponent
 import com.hypixel.hytale.server.core.entity.entities.Player
 import com.hypixel.hytale.server.core.modules.entity.component.HeadRotation
+import com.hypixel.hytale.server.core.modules.entity.component.Interactable
 import com.hypixel.hytale.server.core.modules.entity.component.ModelComponent
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent
 import com.hypixel.hytale.server.core.modules.entity.player.PlayerSkinComponent
+import com.hypixel.hytale.server.core.modules.interaction.Interactions
 import com.hypixel.hytale.server.core.permissions.provider.HytalePermissionsProvider
 import com.hypixel.hytale.server.core.universe.PlayerRef
 import com.hypixel.hytale.server.core.universe.Universe
@@ -23,19 +30,19 @@ import com.hypixel.hytale.server.core.universe.world.World
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore
 import com.hypixel.hytale.server.npc.NPCPlugin
 import dev.rm20.thankmasvault.npc.NpcNameplateHelper
+import dev.rm20.thankmasvault.npc.VaultNpcComponent
 import dev.rm20.thankmasvault.npc.player.AppearanceHelper
 import dev.rm20.thankmasvault.npc.player.PlayerNpcComponent
-import dev.rm20.thankmasvault.npc.VaultNpcComponent
 import javax.annotation.Nonnull
 
 class SpawnPlayerNpcCommand : AbstractPlayerCommand(
-    "spawnplayernpc",
-    "Spawn an NPC clone of yourself with your current skin and attachments"
+    "spawnplayernpc", "Spawn an interactive player NPC integrated as a Thankmas parcel delivery recipient"
 ) {
 
     private val nameArg = withOptionalArg("name", "Display name of the spawned NPC", ArgTypes.STRING)
+
     init {
-        addAliases("spawnplayer", "playernpc", "splayernpc", "vaultplayernpc")
+        addAliases("spawnplayer", "playernpc", "splayernpc", "spawnrecipient")
         setPermissionGroups(HytalePermissionsProvider.GROUP_ADMIN)
     }
 
@@ -103,7 +110,13 @@ class SpawnPlayerNpcCommand : AbstractPlayerCommand(
 
         // Determine Role
         val npcPlugin = NPCPlugin.get()
-        var roleIndex = npcPlugin.getIndex("Player_NPC")
+        var roleIndex = npcPlugin.getIndex("Player_Recipient_NPC")
+        if (roleIndex == AssetMapWithIndexes.NOT_FOUND) {
+            roleIndex = npcPlugin.getIndex("Shops/Player_Recipient_NPC")
+        }
+        if (roleIndex == AssetMapWithIndexes.NOT_FOUND) {
+            roleIndex = npcPlugin.getIndex("Player_NPC")
+        }
         if (roleIndex == AssetMapWithIndexes.NOT_FOUND) {
             roleIndex = npcPlugin.getIndex("Shops/Player_NPC")
         }
@@ -119,21 +132,14 @@ class SpawnPlayerNpcCommand : AbstractPlayerCommand(
         }
 
         val npcPair = npcPlugin.spawnEntity(
-            store,
-            roleIndex,
-            playerPos,
-            headRotation,
-            spawnModel
+            store, roleIndex, playerPos, headRotation, spawnModel
         ) { _, npcEntityRef, entityStore ->
             entityStore.externalData.world.execute {
                 if (!npcEntityRef.isValid) return@execute
 
                 // Copy appearance
                 AppearanceHelper.copyPlayerAppearanceToNpc(
-                    sourceRef,
-                    npcEntityRef,
-                    entityStore,
-                    saveToConfig = false
+                    sourceRef, npcEntityRef, entityStore, saveToConfig = false
                 )
 
                 var config = entityStore.getComponent(npcEntityRef, VaultNpcComponent.componentType)
@@ -141,6 +147,7 @@ class SpawnPlayerNpcCommand : AbstractPlayerCommand(
                     config = VaultNpcComponent()
                 }
                 config.displayName = finalName
+                config.isStatue = false
                 if (playerSkin != null) {
                     config.skinJson = AppearanceHelper.playerSkinToJson(playerSkin)
                 }
@@ -156,6 +163,7 @@ class SpawnPlayerNpcCommand : AbstractPlayerCommand(
                 if (playerNpcComp == null) {
                     playerNpcComp = PlayerNpcComponent()
                 }
+                playerNpcComp.isStatue = false
                 if (playerSkin != null) {
                     playerNpcComp.skinJson = AppearanceHelper.playerSkinToJson(playerSkin)
                 }
@@ -164,13 +172,48 @@ class SpawnPlayerNpcCommand : AbstractPlayerCommand(
                 }
                 entityStore.putComponent(npcEntityRef, PlayerNpcComponent.componentType, playerNpcComp)
 
-                // if user is offline get skin from hytags
-                if (targetUsername != null && sourceRef == ref && !targetUsername.equals(playerRef.username, ignoreCase = true)) {
+
+                val recipientId = DeliveryNpc.generateId(finalName)
+                val deliveryMarker = DeliveryNpc("recipient", recipientId, finalName)
+                val dType = DeliveryNpc.getComponentType()
+                if (dType != null) {
+                    entityStore.putComponent(npcEntityRef, dType, deliveryMarker)
+                }
+
+                val interactions = Interactions()
+                interactions.setInteractionId(InteractionType.Use, "Parcel_Delivery_NPC")
+                interactions.setInteractionHint("server.interactionHints.Parcel_Recipient")
+                entityStore.putComponent(npcEntityRef, Interactions.getComponentType(), interactions)
+                entityStore.putComponent(npcEntityRef, Interactable.getComponentType(), Interactable.INSTANCE)
+
+                val deliveryService = ThankmasDeliveryPlugin.get()?.deliveryService()
+                val uuidComp = entityStore.getComponent(npcEntityRef, UUIDComponent.getComponentType())
+                if (deliveryService != null && uuidComp != null) {
+                    val destination = DeliveryStore.Destination(
+                        recipientId,
+                        finalName,
+                        world.name,
+                        playerPos.x,
+                        playerPos.y,
+                        playerPos.z,
+                        "",
+                        uuidComp.uuid,
+                        world.worldConfig.uuid,
+                        false,
+                        "",
+                        0
+                    )
+                    deliveryService.deliveryStore().register(destination)
+                    deliveryService.observeRecipient(npcEntityRef, deliveryMarker)
+                }
+
+                // If user is offline, fetch skin from hytags
+                if (targetUsername != null && sourceRef == ref && !targetUsername.equals(
+                        playerRef.username, ignoreCase = true
+                    )
+                ) {
                     AppearanceHelper.copyPlayerAppearanceByUsername(
-                        targetUsername,
-                        npcEntityRef,
-                        entityStore,
-                        saveToConfig = true
+                        targetUsername, npcEntityRef, entityStore, saveToConfig = true
                     ).thenAccept { success ->
                         if (success) {
                             playerRef.sendMessage(

@@ -109,7 +109,7 @@ Group #Group {
       }
 
       Group #PlayerAppearanceGroup {
-        Anchor: (Width: 400, Height: 200, Top: 15);
+        Anchor: (Width: 400, Height: 300, Top: 15);
         LayoutMode: Top;
 
         $C.@TextButton #CopyAppearanceButton {
@@ -122,8 +122,47 @@ Group #Group {
           Text: "Fetch Skin From Name";
         }
 
-        Group #PoseGroup {
+        Group #NpcTypeGroup {
           Anchor: (Width: 400, Height: 32, Top: 15);
+          LayoutMode: Left;
+          Label #NpcTypeLabel {
+            Anchor: (Width: 150, Height: 32, Left: 0);
+            Text: "NPC Classification";
+            Style: (TextColor: #ffffff, VerticalAlignment: Center);
+          }
+          $C.@DropdownBox #NpcTypeDropdown {
+            Anchor: (Width: 240, Height: 32, Right: 0);
+          }
+        }
+
+        Group #StatueOverlayGroup {
+          Anchor: (Width: 400, Height: 32, Top: 10);
+          LayoutMode: Left;
+          Label #StatueOverlayLabel {
+            Anchor: (Width: 150, Height: 32, Left: 0);
+            Text: "Statue Overlay";
+            Style: (TextColor: #ffffff, VerticalAlignment: Center);
+          }
+          $C.@DropdownBox #StatueOverlayDropdown {
+            Anchor: (Width: 240, Height: 32, Right: 0);
+          }
+        }
+
+        Group #StatueRotationGroup {
+          Anchor: (Width: 400, Height: 32, Top: 10);
+          LayoutMode: Left;
+          Label #StatueRotationLabel {
+            Anchor: (Width: 150, Height: 32, Left: 0);
+            Text: "Statue Rotation";
+            Style: (TextColor: #ffffff, VerticalAlignment: Center);
+          }
+          $C.@TextField #StatueRotationField {
+            Anchor: (Width: 240, Height: 32, Right: 0);
+          }
+        }
+
+        Group #PoseGroup {
+          Anchor: (Width: 400, Height: 32, Top: 10);
           LayoutMode: Left;
           Label #PoseLabel {
             Anchor: (Width: 150, Height: 32, Left: 0);

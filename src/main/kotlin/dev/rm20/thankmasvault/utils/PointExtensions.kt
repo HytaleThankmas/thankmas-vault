@@ -24,6 +24,19 @@ fun Store<EntityStore>.getPoint(pointId: String): PointEntry? =
     this.getResource(PointsPlugin.get().managerResourceType).getPoint(pointId)
 
 /**
+ * Removes a point by ID and notifies viewers
+ */
+fun Store<EntityStore>.removePoint(pointId: String): Boolean {
+    val manager = this.getResource(PointsPlugin.get().managerResourceType)
+    if (manager.hasPoint(pointId)) {
+        manager.unregister(pointId)
+        manager.notifyViewersRemove(pointId)
+        return true
+    }
+    return false
+}
+
+/**
  * Creates a new point [Store<EntityStore>]
  *
  * @param worldName the world name
@@ -179,4 +192,30 @@ fun Store<EntityStore>.findClosestPointForPlayer(
     val playerPos = playerRef.transform.position
     val origin = Vector3d(playerPos.x, playerPos.y, playerPos.z)
     return findClosestPoint(origin, world.name)
+}
+
+
+fun Store<EntityStore>.spawnStatuePointForNpc(
+    npcRef: Ref<EntityStore>,
+    name: String? = null
+): PointEntry {
+    val manager = this.getResource(PointsPlugin.get().managerResourceType)
+    val world = this.externalData.world
+    val worldName = world.name.lowercase(Locale.ROOT)
+
+    val transform = this.getComponent(npcRef, TransformComponent.getComponentType())
+    val npcPos = transform?.position ?: Vector3d()
+    val npcRot = transform?.rotation
+
+    // 2.2 blocks above
+    val position = Vector3d(npcPos.x, npcPos.y + 2.2, npcPos.z)
+    val yawDeg = if (npcRot != null) Math.toDegrees(npcRot.yaw().toDouble()).toFloat() else 0f
+    val rotation = Vector3f(0f, yawDeg, 0f)
+
+    val id = manager.generateUniquePointId()
+    val entry = PointEntry(id, worldName, position, rotation, name, true)
+    entry.shape = PointShapeType.Block
+    manager.register(id, entry)
+    manager.notifyViewersAdd(entry)
+    return entry
 }
