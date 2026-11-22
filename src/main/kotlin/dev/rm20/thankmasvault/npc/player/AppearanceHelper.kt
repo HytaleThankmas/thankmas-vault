@@ -9,7 +9,6 @@ import com.hypixel.hytale.component.Holder
 import com.hypixel.hytale.component.Ref
 import com.hypixel.hytale.component.Store
 import com.hypixel.hytale.protocol.AnimationSlot
-import com.hypixel.hytale.protocol.InteractionType
 import com.hypixel.hytale.protocol.PlayerSkin
 import com.hypixel.hytale.protocol.Rangef
 import com.hypixel.hytale.server.core.NameMatching
@@ -25,12 +24,7 @@ import com.hypixel.hytale.server.core.entity.effect.EffectControllerComponent
 import com.hypixel.hytale.server.core.inventory.InventoryComponent
 import com.hypixel.hytale.server.core.inventory.ItemStack
 import com.hypixel.hytale.server.core.inventory.container.SimpleItemContainer
-import com.hypixel.hytale.server.core.modules.entity.component.ActiveAnimationComponent
-import com.hypixel.hytale.server.core.modules.entity.component.HeadRotation
-import com.hypixel.hytale.server.core.modules.entity.component.Interactable
-import com.hypixel.hytale.server.core.modules.entity.component.ModelComponent
-import com.hypixel.hytale.server.core.modules.entity.component.PersistentModel
-import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent
+import com.hypixel.hytale.server.core.modules.entity.component.*
 import com.hypixel.hytale.server.core.modules.entity.player.PlayerSkinComponent
 import com.hypixel.hytale.server.core.modules.interaction.Interactions
 import com.hypixel.hytale.server.core.universe.Universe

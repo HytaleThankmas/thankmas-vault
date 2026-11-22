@@ -66,6 +66,32 @@
               "Sensor": {
                 "Type": "Any"
               },
+              "Actions": [
+                {
+                  "Type": "Timeout",
+                  "Delay": [
+                    1,
+                    1
+                  ],
+                  "Action": {
+                    "Type": "Sequence",
+                    "Actions": [
+                      {
+                        "Type": "ReleaseTarget"
+                      },
+                      {
+                        "Type": "State",
+                        "State": "Idle"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "Sensor": {
+                "Type": "Any"
+              },
               "BodyMotion": {
                 "Type": "Nothing"
               }
@@ -77,21 +103,6 @@
   ],
   "InteractionInstruction": {
     "Instructions": [
-      {
-        "Sensor": {
-          "Type": "Not",
-          "Sensor": {
-            "Type": "thankmasDeliveryCanInteract",
-            "ViewSector": 360
-          }
-        },
-        "Actions": [
-          {
-            "Type": "SetInteractable",
-            "Interactable": false
-          }
-        ]
-      },
       {
         "Sensor": {
           "Type": "thankmasDeliveryCanInteract",
@@ -108,9 +119,43 @@
       },
       {
         "Sensor": {
+          "Type": "Not",
+          "Sensor": {
+            "Type": "thankmasDeliveryCanInteract",
+            "ViewSector": 360
+          }
+        },
+        "Actions": [
+          {
+            "Type": "SetInteractable",
+            "Interactable": true,
+            "Hint": "server.interactionHints.talk"
+          }
+        ],
+        "Continue": true
+      },
+      {
+        "Sensor": {
           "Type": "HasInteracted"
         },
         "Instructions": [
+          {
+            "Sensor": {
+              "Type": "thankmasDeliveryCanInteract",
+              "ViewSector": 360
+            },
+            "Actions": [
+              {
+                "Type": "LockOnInteractionTarget"
+              },
+              {
+                "Type": "thankmasDeliveryNpcInteract"
+              },
+              {
+                "Type": "ReleaseTarget"
+              }
+            ]
+          },
           {
             "Sensor": {
               "Type": "Not",
@@ -124,10 +169,14 @@
                 "Type": "LockOnInteractionTarget"
               },
               {
-                "Type": "thankmasDeliveryNpcInteract"
+                "Type": "OpenNpcDialogue"
               },
               {
-                "Type": "ReleaseTarget"
+                "Type": "OpenVaultShop"
+              },
+              {
+                "Type": "State",
+                "State": "$Interaction"
               }
             ]
           }

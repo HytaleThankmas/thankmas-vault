@@ -6,6 +6,7 @@ import dev.rm20.thankmasvault.npc.shop.fishing.FishBagUIHandler.openFishMarket
 import dev.rm20.thankmasvault.npc.shop.shopKepper.ShopOpener.openShop
 import dev.rm20.anglersalmanac.Inventory.FishBagUIHandler
 import dev.rm20.thankmasvault.fishing.RodShopOpener
+import dev.rm20.thankmasvault.npc.player.PlayerNpcListPage
 
 object DialogueActionsRegister {
 
@@ -36,6 +37,13 @@ object DialogueActionsRegister {
 
         DialogueActionRegistry.register("rodShop", keepCamera = true) { playerRef, npcRef, _ ->
             RodShopOpener.openRodShop(playerRef, npcRef)
+        }
+
+        DialogueActionRegistry.register("playerNpcList", keepCamera = false) { playerRef, _, _ ->
+            val ref = playerRef.reference ?: return@register
+            val player = ref.store.getComponent(ref, Player.getComponentType()) ?: return@register
+            val page = PlayerNpcListPage(playerRef)
+            player.pageManager.openCustomPage(ref, ref.store, page)
         }
     }
 }

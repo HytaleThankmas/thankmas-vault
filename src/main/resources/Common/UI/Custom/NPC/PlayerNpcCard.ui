@@ -1,0 +1,38 @@
+$C = "../Common.ui";
+
+Group {
+  Anchor: (Width: 180, Height: 240);
+  Padding: (Horizontal: 6, Vertical: 8);
+
+  Group #CardBorder {
+    Anchor: (Full: 0);
+    Background: #14202c;
+    Padding: (Horizontal: 8, Vertical: 8);
+    LayoutMode: Top;
+
+    Group #PlayerContainer {
+      Anchor: (Width: 150, Height: 150);
+      LayoutMode: CenterMiddle;
+      Background: #0e151e;
+
+      AssetImage #PlayerImage {
+        Anchor: (Width: 140, Height: 140);
+        Visible: false;
+      }
+
+      AssetImage #MaskPlayerImage {
+        Anchor: (Width: 140, Height: 140);
+        Visible: true;
+        MaskTexturePath: "HiddenPlayerMask.png";
+      }
+
+    }
+
+    Label #PlayerName {
+      Anchor: (Height: 26, Top: 8);
+      Style: (FontSize: 16, TextColor: #e0e8f0, HorizontalAlignment: Center, VerticalAlignment: Center, RenderBold: true);
+      Text: "???";
+    }
+
+  }
+}

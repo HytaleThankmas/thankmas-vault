@@ -75,6 +75,7 @@ class PoseAsset : AssetBase<PoseAsset>() {
         }
 
         val DEFAULT_POSES = listOf(
+            PoseInfo("IdleStatue","Characters/Animations/Poses/Idle.blockyanim"),
             PoseInfo("Sit", "Characters/Animations/Flavor/Sit.blockyanim"),
             PoseInfo("SitGround", "Characters/Animations/Flavor/Sit_Ground.blockyanim"),
             PoseInfo("Sleep", "Characters/Animations/Flavor/Sleep.blockyanim"),

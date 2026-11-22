@@ -180,10 +180,6 @@ class SpawnPlayerNpcCommand : AbstractPlayerCommand(
                     entityStore.putComponent(npcEntityRef, dType, deliveryMarker)
                 }
 
-                val interactions = Interactions()
-                interactions.setInteractionId(InteractionType.Use, "Parcel_Delivery_NPC")
-                interactions.setInteractionHint("server.interactionHints.Parcel_Recipient")
-                entityStore.putComponent(npcEntityRef, Interactions.getComponentType(), interactions)
                 entityStore.putComponent(npcEntityRef, Interactable.getComponentType(), Interactable.INSTANCE)
 
                 val deliveryService = ThankmasDeliveryPlugin.get()?.deliveryService()

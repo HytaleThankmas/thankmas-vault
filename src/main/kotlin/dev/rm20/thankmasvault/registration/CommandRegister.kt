@@ -17,5 +17,6 @@ object CommandRegister {
         commandRegistry.registerCommand(RodUpgradeCommand())
         commandRegistry.registerCommand(RespawnPlayerNpcsCommand())
         commandRegistry.registerCommand(RotateStatueCommand())
+        commandRegistry.registerCommand(PlayerNpcsCommand())
     }
 }

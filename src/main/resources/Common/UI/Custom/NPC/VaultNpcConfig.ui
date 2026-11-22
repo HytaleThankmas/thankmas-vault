@@ -2,9 +2,7 @@ $C = "../Common.ui";
 
 Group #Group {
   $C.@Container #Containere {
-    ScrollbarStyle: $C.@DefaultScrollbarStyle;
-    LayoutMode: Top;
-    Anchor: (Width: 450, Height: 650);
+    Anchor: (Width: 460, Height: 680);
 
     #Title {
       LayoutMode: Top;
@@ -16,8 +14,10 @@ Group #Group {
     }
 
     #Content {
-      Anchor: (Width: 450, Height: 750);
-      LayoutMode: Top;
+      Anchor: (Width: 460, Height: 630);
+      LayoutMode: TopScrolling;
+      ScrollbarStyle: $C.@DefaultScrollbarStyle;
+      Padding: (Top: 10, Bottom: 25, Left: 15, Right: 25);
 
       Group #DisplayNameGroup {
         Anchor: (Width: 400, Height: 25, Top: 5);
@@ -55,6 +55,32 @@ Group #Group {
                 Style: (TextColor: #ffffff);
               }
               $C.@TextField #DialogueTextField {
+                Anchor: (Width: 240, Height: 25, Right: 0);
+              }
+            }
+
+            Group #FirstTimeDialogueGroup {
+              Anchor: (Width: 400, Height: 25, Top: 15);
+              LayoutMode: Left;
+              Label #FirstTimeDialogueLabel {
+                Anchor: (Width: 150, Height: 25, Left: 0);
+                Text: "1st Time Line";
+                Style: (TextColor: #ffffff);
+              }
+              $C.@TextField #FirstTimeDialogueTextField {
+                Anchor: (Width: 240, Height: 25, Right: 0);
+              }
+            }
+
+            Group #FirstTimeCoinsGroup {
+              Anchor: (Width: 400, Height: 25, Top: 15);
+              LayoutMode: Left;
+              Label #FirstTimeCoinsLabel {
+                Anchor: (Width: 150, Height: 25, Left: 0);
+                Text: "1st Time Coins";
+                Style: (TextColor: #ffffff);
+              }
+              $C.@TextField #FirstTimeCoinsField {
                 Anchor: (Width: 240, Height: 25, Right: 0);
               }
             }
@@ -109,7 +135,7 @@ Group #Group {
       }
 
       Group #PlayerAppearanceGroup {
-        Anchor: (Width: 400, Height: 300, Top: 15);
+        Anchor: (Width: 400, Top: 15);
         LayoutMode: Top;
 
         $C.@TextButton #CopyAppearanceButton {
@@ -202,7 +228,7 @@ Group #Group {
       }
 
       Group #DeliveryNpcGroup {
-        Anchor: (Width: 400, Height: 200, Top: 15);
+        Anchor: (Width: 400, Top: 15);
         LayoutMode: Top;
 
         Label #DeliverySectionLabel {

@@ -21,6 +21,8 @@ class VaultNpcComponent : Component<EntityStore> {
     var offHandItem: String = ""
     var isStatue: Boolean = false
     var statueOverlay: String = "stone"
+    var firstTimeDialogueText: String = ""
+    var firstTimeCoins: Int = 0
 
     override fun clone(): Component<EntityStore> {
         val copy = VaultNpcComponent()
@@ -37,6 +39,8 @@ class VaultNpcComponent : Component<EntityStore> {
         copy.offHandItem = this.offHandItem
         copy.isStatue = this.isStatue
         copy.statueOverlay = this.statueOverlay
+        copy.firstTimeDialogueText = this.firstTimeDialogueText
+        copy.firstTimeCoins = this.firstTimeCoins
         return copy
     }
 

@@ -51,6 +51,8 @@ class VaultNpcPage(
         var pointId: String? = null
         var dialogueId: String? = null
         var dialogueText: String? = null
+        var firstTimeDialogueText: String? = null
+        var firstTimeCoins: String? = null
         var pose: String? = null
         var mainHandItem: String? = null
         var offHandItem: String? = null
@@ -97,6 +99,16 @@ class VaultNpcPage(
                     KeyedCodec("@DialogueText", Codec.STRING),
                     { data, s -> data.dialogueText = s },
                     { it.dialogueText ?: "" }
+                ).add()
+                .append(
+                    KeyedCodec("@FirstTimeDialogueText", Codec.STRING),
+                    { data, s -> data.firstTimeDialogueText = s },
+                    { it.firstTimeDialogueText ?: "" }
+                ).add()
+                .append(
+                    KeyedCodec("@FirstTimeCoins", Codec.STRING),
+                    { data, s -> data.firstTimeCoins = s },
+                    { it.firstTimeCoins ?: "" }
                 ).add()
                 .append(
                     KeyedCodec("@Pose", Codec.STRING),
@@ -206,6 +218,20 @@ class VaultNpcPage(
             CustomUIEventBindingType.ValueChanged,
             "#DialogueTextField",
             EventData.of("@DialogueText", "#DialogueTextField.Value"),
+            false
+        )
+
+        eventBuilder.addEventBinding(
+            CustomUIEventBindingType.ValueChanged,
+            "#FirstTimeDialogueTextField",
+            EventData.of("@FirstTimeDialogueText", "#FirstTimeDialogueTextField.Value"),
+            false
+        )
+
+        eventBuilder.addEventBinding(
+            CustomUIEventBindingType.ValueChanged,
+            "#FirstTimeCoinsField",
+            EventData.of("@FirstTimeCoins", "#FirstTimeCoinsField.Value"),
             false
         )
 
@@ -384,6 +410,8 @@ class VaultNpcPage(
         commandBuilder.set("#PointIdField.Value", config?.pointId ?: "")
         commandBuilder.set("#DialogueIdField.Value", config?.dialogueId ?: "")
         commandBuilder.set("#DialogueTextField.Value", config?.dialogueText ?: "")
+        commandBuilder.set("#FirstTimeDialogueTextField.Value", config?.firstTimeDialogueText ?: "")
+        commandBuilder.set("#FirstTimeCoinsField.Value", (config?.firstTimeCoins ?: 0).toString())
         if (isPlayer) {
             commandBuilder.set("#PoseDropdown.Value", config?.pose?.ifBlank { "None" } ?: "None")
             commandBuilder.set("#MainHandField.Value", config?.mainHandItem ?: "")
@@ -489,6 +517,19 @@ class VaultNpcPage(
             changed = true
         }
 
+        if (data.firstTimeDialogueText != null) {
+            config.firstTimeDialogueText = data.firstTimeDialogueText!!.trim()
+            changed = true
+        }
+
+        if (data.firstTimeCoins != null) {
+            val parsed = data.firstTimeCoins!!.trim().toIntOrNull()
+            if (parsed != null) {
+                config.firstTimeCoins = parsed
+                changed = true
+            }
+        }
+
         val isPlayer = AppearanceHelper.isPlayerNpc(targetEntityRef, store)
         if (isPlayer) {
             var playerNpcComp = store.getComponent(targetEntityRef, PlayerNpcComponent.componentType)
@@ -546,10 +587,11 @@ class VaultNpcPage(
                                     store.putComponent(targetEntityRef, dType, marker)
                                 }
                                 val interactions = store.getComponent(targetEntityRef, Interactions.getComponentType())
-                                    ?: Interactions()
-                                interactions.setInteractionId(InteractionType.Use, "Parcel_Delivery_NPC")
-                                interactions.setInteractionHint("server.interactionHints.Parcel_Recipient")
-                                store.putComponent(targetEntityRef, Interactions.getComponentType(), interactions)
+                                if (interactions != null && "Parcel_Delivery_NPC" == interactions.getInteractionId(InteractionType.Use)) {
+                                    interactions.removeInteractionId(InteractionType.Use)
+                                    interactions.setInteractionHint(null)
+                                    store.putComponent(targetEntityRef, Interactions.getComponentType(), interactions)
+                                }
                                 store.putComponent(
                                     targetEntityRef,
                                     Interactable.getComponentType(),
@@ -798,13 +840,22 @@ class VaultNpcPage(
                             DisplayNameSupport.setDisplayName(targetEntityRef, nameToUse, store)
                             NpcNameplateHelper.applyNameplate(targetEntityRef, nameToUse, store)
 
-                            var interactions = store.getComponent(targetEntityRef, Interactions.getComponentType())
-                            if (interactions == null) {
-                                interactions = Interactions()
+                            if (lastDeliveryKind == "dispatcher") {
+                                var interactions = store.getComponent(targetEntityRef, Interactions.getComponentType())
+                                if (interactions == null) {
+                                    interactions = Interactions()
+                                }
+                                interactions.setInteractionId(InteractionType.Use, "Parcel_Delivery_NPC")
+                                interactions.setInteractionHint("server.interactionHints.Parcel_Dispatcher")
+                                store.putComponent(targetEntityRef, Interactions.getComponentType(), interactions)
+                            } else {
+                                val interactions = store.getComponent(targetEntityRef, Interactions.getComponentType())
+                                if (interactions != null && "Parcel_Delivery_NPC" == interactions.getInteractionId(InteractionType.Use)) {
+                                    interactions.removeInteractionId(InteractionType.Use)
+                                    interactions.setInteractionHint(null)
+                                    store.putComponent(targetEntityRef, Interactions.getComponentType(), interactions)
+                                }
                             }
-                            interactions.setInteractionId(InteractionType.Use, "Parcel_Delivery_NPC")
-                            interactions.setInteractionHint("server.interactionHints.Parcel_" + (if (lastDeliveryKind == "recipient") "Recipient" else "Dispatcher"))
-                            store.putComponent(targetEntityRef, Interactions.getComponentType(), interactions)
 
                             if (store.getComponent(targetEntityRef, Interactable.getComponentType()) == null) {
                                 store.addComponent(

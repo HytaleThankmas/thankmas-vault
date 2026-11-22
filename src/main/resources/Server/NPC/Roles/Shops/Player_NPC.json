@@ -172,6 +172,20 @@
       },
       {
         "Sensor": {
+          "Type": "thankmasDeliveryCanInteract",
+          "ViewSector": 360
+        },
+        "Actions": [
+          {
+            "Type": "SetInteractable",
+            "Interactable": true,
+            "Hint": "server.interactionHints.Parcel_Recipient"
+          }
+        ],
+        "Continue": true
+      },
+      {
+        "Sensor": {
           "Type": "Any"
         },
         "Actions": [
@@ -188,6 +202,23 @@
           "Type": "HasInteracted"
         },
         "Instructions": [
+          {
+            "Sensor": {
+              "Type": "thankmasDeliveryCanInteract",
+              "ViewSector": 360
+            },
+            "Actions": [
+              {
+                "Type": "LockOnInteractionTarget"
+              },
+              {
+                "Type": "thankmasDeliveryNpcInteract"
+              },
+              {
+                "Type": "ReleaseTarget"
+              }
+            ]
+          },
           {
             "Sensor": {
               "Type": "Not",

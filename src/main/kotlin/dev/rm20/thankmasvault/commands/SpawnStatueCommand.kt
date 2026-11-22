@@ -134,6 +134,7 @@ class SpawnStatueCommand : AbstractPlayerCommand(
                 config.displayName = finalName
                 config.isStatue = true
                 config.statueOverlay = overlayType
+                config.pose= "IdleStatue"
                 if (playerSkin != null) {
                     config.skinJson = AppearanceHelper.playerSkinToJson(playerSkin)
                 }

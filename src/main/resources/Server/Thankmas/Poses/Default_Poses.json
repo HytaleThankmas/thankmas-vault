@@ -1,5 +1,6 @@
 {
   "Poses": [
+    { "Name": "IdleStatue", "Animation": "Characters/Animations/Poses/Idle.blockyanim" },
     { "Name": "Sit", "Animation": "Characters/Animations/Flavor/Sit.blockyanim" },
     { "Name": "SitGround", "Animation": "Characters/Animations/Flavor/Sit_Ground.blockyanim" },
     { "Name": "Sleep", "Animation": "Characters/Animations/Flavor/Sleep.blockyanim" },

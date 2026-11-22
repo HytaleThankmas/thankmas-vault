@@ -360,10 +360,6 @@ class RespawnPlayerNpcsCommand : AbstractPlayerCommand(
                                     entityStore.putComponent(newEntityRef, dType, deliveryMarker)
                                 }
 
-                                val interactions = Interactions()
-                                interactions.setInteractionId(InteractionType.Use, "Parcel_Delivery_NPC")
-                                interactions.interactionHint = "server.interactionHints.Parcel_Recipient"
-                                entityStore.putComponent(newEntityRef, Interactions.getComponentType(), interactions)
                                 entityStore.putComponent(
                                     newEntityRef, Interactable.getComponentType(), Interactable.INSTANCE
                                 )

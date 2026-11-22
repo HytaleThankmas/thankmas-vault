@@ -10,6 +10,7 @@ import dev.rm20.thankmasvault.npc.NpcNameplateSystem
 import dev.rm20.thankmasvault.npc.player.NpcAppearanceSystem
 import dev.rm20.thankmasvault.npc.player.NpcLoadSystem
 import dev.rm20.thankmasvault.npc.player.NpcStoreSystem
+import dev.rm20.thankmasvault.npc.player.PlayerFoundNpcs
 import dev.rm20.thankmasvault.npc.player.PlayerNpcComponent
 import dev.rm20.thankmasvault.npc.player.PlayerNpcComponentCodec
 import dev.rm20.thankmasvault.npc.VaultNpcComponent
@@ -34,6 +35,10 @@ object ComponentRegister {
 
         PlayerRodProgressionComponent.componentType = registry.registerComponent(
             PlayerRodProgressionComponent::class.java, "thankmasvault:rod_progression", PlayerRodProgressionComponentCodec
+        )
+
+        PlayerFoundNpcs.componentType = registry.registerComponent(
+            PlayerFoundNpcs::class.java, "thankmasvault:found_npcs", PlayerFoundNpcs.CODEC
         )
 
         registry.registerSystem(NpcLoadSystem())
