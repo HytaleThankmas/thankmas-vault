@@ -22,7 +22,10 @@ object DialogueActionRegistry {
     }
 
     fun shouldKeepCamera(id: String): Boolean {
-        return actions[id.lowercase()]?.keepCamera ?: false
+        val exact = actions[id.lowercase()]
+        if (exact != null) return exact.keepCamera
+        val prefix = id.substringBefore(":").lowercase()
+        return actions[prefix]?.keepCamera ?: false
     }
 
     fun execute(
@@ -31,7 +34,7 @@ object DialogueActionRegistry {
         targetEntityRef: Ref<EntityStore>,
         choice: Choice
     ) {
-        val registered = actions[id.lowercase()]
+        val registered = actions[id.lowercase()] ?: actions[id.substringBefore(":").lowercase()]
         if (registered != null) {
             registered.action.execute(playerRef, targetEntityRef, choice)
         } else {

@@ -89,26 +89,6 @@ class DialoguePage(
                         )
                     ), false
                 )
-
-                eventBuilder.addEventBinding(
-                    CustomUIEventBindingType.MouseEntered, "$selector #ChoiceButton", EventData(
-                        mapOf(
-                            DialoguePageData.CHOICE_INDEX to i.toString(),
-                            DialoguePageData.ACTION to "hover_enter",
-                            DialoguePageData.SELECTOR to selector
-                        )
-                    ), false
-                )
-
-                eventBuilder.addEventBinding(
-                    CustomUIEventBindingType.MouseExited, "$selector #ChoiceButton", EventData(
-                        mapOf(
-                            DialoguePageData.CHOICE_INDEX to i.toString(),
-                            DialoguePageData.ACTION to "hover_exit",
-                            DialoguePageData.SELECTOR to selector
-                        )
-                    ), false
-                )
             }
         } else if (node.next != null) {
             commandBuilder.append("#ChoiceGrid", "NPC/ChoiceSlot.ui")
@@ -185,39 +165,7 @@ class DialoguePage(
             }
 
             "close" -> close()
-            "hover_enter" -> handleMouseEnter(data)
-            "hover_exit" -> handleMouseExit(data)
         }
-    }
-
-    private fun handleMouseEnter(data: DialoguePageData) {
-        if (isDismissed || (!data.selector.startsWith("#ChoiceGrid") && !data.selector.startsWith("#ChoiceSlot"))) return
-        val commandBuilder = UICommandBuilder()
-
-        if (currentHoveredSelector != null && currentHoveredSelector != data.selector) {
-            commandBuilder.setObject("${currentHoveredSelector} #CardBorder.Anchor", DEFAULT_CARD_ANCHOR)
-        }
-        currentHoveredSelector = data.selector
-
-        if (data.selector.isNotEmpty()) {
-            commandBuilder.setObject("${data.selector} #CardBorder.Anchor", HOVERED_CARD_ANCHOR)
-        }
-
-        sendUpdate(commandBuilder, false)
-    }
-
-    private fun handleMouseExit(data: DialoguePageData) {
-        if (isDismissed || (!data.selector.startsWith("#ChoiceGrid") && !data.selector.startsWith("#ChoiceSlot"))) return
-        val commandBuilder = UICommandBuilder()
-
-        if (data.selector.isNotEmpty()) {
-            commandBuilder.setObject("${data.selector} #CardBorder.Anchor", DEFAULT_CARD_ANCHOR)
-        }
-        if (currentHoveredSelector == data.selector) {
-            currentHoveredSelector = null
-        }
-
-        sendUpdate(commandBuilder, false)
     }
 
     override fun sendUpdate(commandBuilder: UICommandBuilder?, eventBuilder: UIEventBuilder?, clear: Boolean) {

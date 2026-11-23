@@ -42,7 +42,7 @@ class SpawnPlayerNpcCommand : AbstractPlayerCommand(
     private val nameArg = withOptionalArg("name", "Display name of the spawned NPC", ArgTypes.STRING)
 
     init {
-        addAliases("spawnplayer", "playernpc", "splayernpc", "spawnrecipient")
+        addAliases("spawnplayer", "splayernpc", "spawnrecipient")
         setPermissionGroups(HytalePermissionsProvider.GROUP_ADMIN)
     }
 

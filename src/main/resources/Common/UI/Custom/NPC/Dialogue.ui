@@ -36,7 +36,7 @@ Group #DialogRoot {
       Background: (TexturePath: "Images/Dilogue_Top.png");
     }
     Label #DialogueText {
-      Anchor: (Width: 800, Left: 80, Top: -45);
+      Anchor: (Width: 780, Left: 80, Top: -45);
       Text: "SAMPLE TEXT";
       Style: (FontSize: 26, TextColor: $C.@ColorDefault, Wrap: true);
     }

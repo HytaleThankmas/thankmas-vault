@@ -7,6 +7,7 @@ import com.hypixel.hytale.server.core.Message
 import com.hypixel.hytale.server.core.inventory.ItemStack
 import com.hypixel.hytale.server.npc.util.InventoryHelper
 import dev.hardaway.wardrobe.impl.cosmetic.CosmeticAsset
+import dev.rm20.thankmasvault.npc.player.PlayerNpcAPI
 import dev.rm20.thankmasvault.utils.TranslationUtil
 import gg.ginco.jellyparty.codec.AssetBase
 import gg.ginco.jellyparty.codec.annotations.SerialName
@@ -46,6 +47,54 @@ class ShopItemAsset : AssetBase<ShopItemAsset>() {
     @SerialName("Description")
     var description: String? = null
         get() = TranslationUtil.resolve(field)
+
+    @SerialName("RequiredPlayerNpc")
+    var requiredPlayerNpc: String? = null
+
+    @SerialName("RequiredActiveQuest")
+    var requiredActiveQuest: String? = null
+
+    @SerialName("ShopId")
+    var shopId: String? = null
+
+    fun getEffectiveRequiredPlayerNpc(): String? {
+        if (!requiredPlayerNpc.isNullOrBlank()) return requiredPlayerNpc
+
+        // Auto-detect plushies: e.g. "Plush_Slamma", "Deco_Plush_Slamma", "Plush_Simon_Armoured"
+        val candidate = extractPlushieCandidateName() ?: return null
+        if (PlayerNpcAPI.isAssetPlayerNpc(candidate)) {
+            return candidate
+        }
+        return null
+    }
+
+    private fun extractPlushieCandidateName(): String? {
+        val namesToCheck = listOfNotNull(
+            id.takeIf { it.isNotBlank() },
+            cosmeticId.takeIf { it.isNotBlank() },
+            effectiveItemId.takeIf { it.isNotBlank() }
+        )
+        for (name in namesToCheck) {
+            val stripped = when {
+                name.startsWith("Plush_") -> name.removePrefix("Plush_")
+                name.startsWith("Deco_Plush_") -> name.removePrefix("Deco_Plush_")
+                else -> null
+            } ?: continue
+
+            if (PlayerNpcAPI.isAssetPlayerNpc(stripped)) {
+                return stripped
+            }
+            val baseName = stripped.substringBefore("_")
+            if (PlayerNpcAPI.isAssetPlayerNpc(baseName)) {
+                return baseName
+            }
+        }
+        return null
+    }
+
+    fun getEffectiveRequiredQuest(): String? {
+        return requiredActiveQuest?.takeIf { it.isNotBlank() }
+    }
 
     val isCosmetic: Boolean
         get() = cosmeticId.isNotBlank() || (effectiveItemId.isNotBlank() && runCatching { CosmeticAsset.getAssetMap().getAsset(effectiveItemId) != null }.getOrDefault(false))
@@ -153,6 +202,11 @@ class ShopItemAsset : AssetBase<ShopItemAsset>() {
         @JvmStatic
         fun getById(id: String): ShopItemAsset? {
             return runCatching { getAssetMap().getAsset(id) }.getOrNull()
+        }
+
+        @JvmStatic
+        fun getAll(): Collection<ShopItemAsset> {
+            return runCatching { getAssetMap().assetMap.values }.getOrDefault(emptyList())
         }
     }
 }

@@ -27,6 +27,11 @@ class ActionOpenDialogue(
     builder: BuilderActionOpenDialogue, support: BuilderSupport
 ) : ActionBase(builder) {
 
+    companion object {
+        @JvmStatic
+        var dialogueInterceptor: DialogueInterceptor? = null
+    }
+
 
     override fun canExecute(
         @Nonnull ref: Ref<EntityStore>,
@@ -146,7 +151,10 @@ class ActionOpenDialogue(
 
         val pointId = vaultNpcComponent.pointId
 
-        val page = DialoguePage(playerRef, ref, dialogue, vaultNpcComponent.displayName.ifBlank { npcName })
+        val effectiveName = vaultNpcComponent.displayName.ifBlank { npcName }
+        val finalDialogue = dialogueInterceptor?.intercept(playerRef, ref, effectiveName, dialogue) ?: dialogue
+
+        val page = DialoguePage(playerRef, ref, finalDialogue, effectiveName)
         val playerRef1 = playerRef.reference ?: return false
 
         val player = store.getComponent(playerRef1, Player.getComponentType()) ?: return false

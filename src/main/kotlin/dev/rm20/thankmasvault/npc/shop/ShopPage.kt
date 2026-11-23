@@ -27,6 +27,8 @@ import dev.rm20.thankmasvault.assets.ShopItemAsset
 import dev.rm20.thankmasvault.assets.VaultShopAsset
 import dev.rm20.thankmasvault.economy.EconomyAPI
 import dev.rm20.thankmasvault.npc.VaultNpcComponent
+import dev.rm20.thankmasvault.npc.player.PlayerFoundNpcs
+import dev.rm20.thankmasvault.npc.player.PlayerNpcAPI
 import dev.rm20.thankmasvault.npc.shop.shopKepper.voiceline.voicelineInfo
 import dev.rm20.thankmasvault.utils.CameraUtil
 import java.util.concurrent.CompletableFuture
@@ -40,11 +42,69 @@ class ShopPage(
 ) : InteractiveCustomUIPage<ShopPage.ShopEventData>(
     playerRef, CustomPageLifetime.CanDismissOrCloseThroughInteraction, ShopEventData.CODEC
 ) {
-    private val shopItems: List<ShopItemAsset> get() = vaultShopAsset.getShopItems()
+    private var displayedItems: List<ShopItemAsset> = emptyList()
     private var isDismissed = false
     private var hasScheduledSubtitleHide = false
     private var currentHoveredSelector: String? = null
     private var NPCname: String? = null
+
+    private fun getRequiredNpcDisplayName(reqNpc: String): String {
+        val norm = PlayerFoundNpcs.normalize(reqNpc)
+        return PlayerNpcAPI.getAllPlayerNpcs()
+            .firstOrNull { PlayerFoundNpcs.normalize(it.name) == norm }
+            ?.getEffectiveDisplayName() ?: reqNpc
+    }
+
+    private fun computeDisplayedItems(ref: Ref<EntityStore>, store: Store<EntityStore>): List<ShopItemAsset> {
+        val itemsMap = linkedMapOf<String, ShopItemAsset>()
+
+        for (item in vaultShopAsset.getShopItems()) {
+            itemsMap[item.id.lowercase()] = item
+        }
+
+        // Extra items from quests
+        val extraQuestItemIds = ShopItemRegistry.getQuestShopItems(playerRef, vaultShopAsset.id)
+        for (itemId in extraQuestItemIds) {
+            val asset = ShopItemAsset.getById(itemId)
+            if (asset != null) {
+                itemsMap[asset.id.lowercase()] = asset
+            }
+        }
+
+        val activeQuestIds = ShopItemRegistry.getActiveQuestIds(playerRef)
+        if (activeQuestIds.isNotEmpty()) {
+            for (asset in ShopItemAsset.getAll()) {
+                val targetShop = asset.shopId
+                if (!targetShop.isNullOrBlank() && targetShop.equals(vaultShopAsset.id, ignoreCase = true)) {
+                    val reqQuest = asset.requiredActiveQuest
+                    if (!reqQuest.isNullOrBlank() && activeQuestIds.any { it.equals(reqQuest, ignoreCase = true) }) {
+                        itemsMap[asset.id.lowercase()] = asset
+                    }
+                }
+            }
+        }
+
+        // filter items:
+        val visibleItems = itemsMap.values.filter { item ->
+            val reqQuest = item.requiredActiveQuest
+            if (!reqQuest.isNullOrBlank() && !ShopItemRegistry.isQuestActive(playerRef, reqQuest)) {
+                return@filter false
+            }
+
+            true
+        }
+
+        // sort items
+        val (questItems, regularItems) = visibleItems.partition { item ->
+            val isExplicitQuest = !item.requiredActiveQuest.isNullOrBlank() &&
+                    ShopItemRegistry.isQuestActive(playerRef, item.requiredActiveQuest!!)
+            val isDynamicQuest = extraQuestItemIds.any { it.equals(item.id, ignoreCase = true) }
+            isExplicitQuest || isDynamicQuest
+        }
+
+        return questItems + regularItems
+    }
+
     override fun build(
         @Nonnull ref: Ref<EntityStore>,
         @Nonnull commandBuilder: UICommandBuilder,
@@ -78,10 +138,11 @@ class ShopPage(
 
         val wardrobe = runCatching { store.ensureAndGetComponent(ref, PlayerWardrobeComponent.getComponentType()) }.getOrNull()
 
-        val items = shopItems
+        displayedItems = computeDisplayedItems(ref, store)
+        val items = displayedItems
         val firstItem = items.firstOrNull()
         if (firstItem != null && currentHoveredSelector == null) {
-            updateItemInfoPreview(commandBuilder, firstItem, wardrobe)
+            updateItemInfoPreview(commandBuilder, firstItem, wardrobe, store)
         }
 
         for (i in items.indices) {
@@ -89,9 +150,12 @@ class ShopPage(
             val selector = "#ItemsGrid[$i]"
             val name = item.resolveName()
             val isOwned = item.isCosmetic && wardrobe?.isUnlocked(item.resolvedCosmeticId) == true
+            val reqNpc = item.getEffectiveRequiredPlayerNpc()
+            val isLockedByNpc = reqNpc != null && !PlayerNpcAPI.hasInteracted(playerRef, store, reqNpc)
+            val npcDisplayName = if (isLockedByNpc) getRequiredNpcDisplayName(reqNpc) else null
 
             if (currentHoveredSelector == selector) {
-                updateItemInfoPreview(commandBuilder, item, wardrobe)
+                updateItemInfoPreview(commandBuilder, item, wardrobe, store)
             }
             commandBuilder.append("#ItemsGrid", "Shop/ShopItemCard.ui")
 
@@ -117,6 +181,11 @@ class ShopPage(
                 commandBuilder.set("$selector #ItemCost.Text", "Unlocked")
                 commandBuilder.set("$selector #ItemCost.Style.TextColor", "#81c784")
                 commandBuilder.set("$selector #BuyButton.Disabled", true)
+            } else if (isLockedByNpc) {
+                commandBuilder.set("$selector #ItemCost.Text", "find $npcDisplayName first")
+                commandBuilder.set("$selector #ItemCost.Style.TextColor", "#e57373")
+                commandBuilder.set("$selector #BuyButton.Disabled", true)
+                commandBuilder.set("$selector #CardBorder.Background", "#0e1620")
             } else {
                 val effectiveCost = item.getPrice(vaultShopAsset)
                 val canAfford = balance >= effectiveCost
@@ -161,9 +230,16 @@ class ShopPage(
         }
     }
 
-    private fun updateItemInfoPreview(commandBuilder: UICommandBuilder, item: ShopItemAsset, wardrobe: PlayerWardrobeComponent?) {
+    private fun updateItemInfoPreview(
+        commandBuilder: UICommandBuilder,
+        item: ShopItemAsset,
+        wardrobe: PlayerWardrobeComponent?,
+        store: Store<EntityStore>? = null
+    ) {
         val name = item.resolveName()
         val isOwned = item.isCosmetic && wardrobe?.isUnlocked(item.resolvedCosmeticId) == true
+        val reqNpc = item.getEffectiveRequiredPlayerNpc()
+        val isLockedByNpc = reqNpc != null && (store == null || !PlayerNpcAPI.hasInteracted(playerRef, store, reqNpc))
 
         if (item.isCosmetic) {
             commandBuilder.set("#ItemInfoContainer #ItemIcon.Visible", false)
@@ -182,20 +258,29 @@ class ShopPage(
         if (isOwned) {
             commandBuilder.set("#ItemInfoContainer #ItemCost.Text", "Unlocked")
             commandBuilder.set("#ItemInfoContainer #ItemCost.Style.TextColor", "#81c784")
+            commandBuilder.set("#ItemInfoContainer #ItemDescription.Text", item.resolveDescription())
+        } else if (isLockedByNpc) {
+            val npcDisplayName = getRequiredNpcDisplayName(reqNpc)
+            commandBuilder.set("#ItemInfoContainer #ItemCost.Text", "find $npcDisplayName first")
+            commandBuilder.set("#ItemInfoContainer #ItemCost.Style.TextColor", "#e57373")
+            val baseDesc = item.resolveDescription()
+            val lockNotice = "Locked: You must find and speak with $npcDisplayName first to buy this plushie!"
+            val fullDesc = if (baseDesc.isNotBlank()) "$lockNotice\n\n$baseDesc" else lockNotice
+            commandBuilder.set("#ItemInfoContainer #ItemDescription.Text", fullDesc)
         } else {
             val effectiveCost = item.getPrice(vaultShopAsset)
             commandBuilder.set("#ItemInfoContainer #ItemCost.Text", "$effectiveCost Coins")
             commandBuilder.set("#ItemInfoContainer #ItemCost.Style.TextColor", "#f0c040")
+            commandBuilder.set("#ItemInfoContainer #ItemDescription.Text", item.resolveDescription())
         }
-        commandBuilder.set("#ItemInfoContainer #ItemDescription.Text", item.resolveDescription())
     }
 
     override fun handleDataEvent(@Nonnull ref: Ref<EntityStore>, @Nonnull store: Store<EntityStore>, @Nonnull data: ShopEventData) {
         if (isDismissed) return
 
         val index = data.itemIndex
-        if (index < 0 || index >= shopItems.size) return
-        val item = shopItems[index]
+        if (index < 0 || index >= displayedItems.size) return
+        val item = displayedItems[index]
 
         when (data.action) {
             "buy" -> handlePurchase(ref, store, item)
@@ -206,6 +291,13 @@ class ShopPage(
 
     private fun handlePurchase(ref: Ref<EntityStore>, store: Store<EntityStore>, item: ShopItemAsset) {
         val playerEntityRef = playerRef.reference ?: return
+
+        val reqNpc = item.getEffectiveRequiredPlayerNpc()
+        if (reqNpc != null && !PlayerNpcAPI.hasInteracted(playerRef, store, reqNpc)) {
+            val npcDisplayName = getRequiredNpcDisplayName(reqNpc)
+            playerRef.sendMessage(Message.raw("You must find $npcDisplayName first!").color("#FF5555"))
+            return
+        }
 
         val balance = EconomyAPI.getBalance(ref, store)
         val effectiveCost = item.getPrice(vaultShopAsset)
@@ -281,7 +373,7 @@ class ShopPage(
     {
         if (isDismissed || !data.selector.startsWith("#ItemsGrid")) return
         val commandBuilder = UICommandBuilder()
-        val item = shopItems.getOrNull(data.itemIndex) ?: return
+        val item = displayedItems.getOrNull(data.itemIndex) ?: return
         val wardrobe = runCatching { store.ensureAndGetComponent(ref, PlayerWardrobeComponent.getComponentType()) }.getOrNull()
 
         if (currentHoveredSelector != null && currentHoveredSelector != data.selector) {
@@ -290,7 +382,7 @@ class ShopPage(
         }
         currentHoveredSelector = data.selector
 
-        updateItemInfoPreview(commandBuilder, item, wardrobe)
+        updateItemInfoPreview(commandBuilder, item, wardrobe, store)
 
         // move button slightly to the right
         if (data.selector.isNotEmpty()) {

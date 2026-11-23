@@ -91,7 +91,11 @@ object PlayerNpcAPI {
         val ref = playerRef.reference ?: return false
         if (!ref.isValid) return false
         val foundComp = store.ensureAndGetComponent(ref, PlayerFoundNpcs.componentType)
-        return foundComp.add(npcIdOrName)
+        val added = foundComp.add(npcIdOrName)
+        if (!displayName.isNullOrBlank()) {
+            foundComp.add(displayName)
+        }
+        return added
     }
 
     @JvmStatic
