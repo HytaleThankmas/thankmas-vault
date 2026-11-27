@@ -79,7 +79,7 @@ class ActionOpenDialogue(
         // Check and record first-time interaction
         val isFirstTime = PlayerNpcAPI.recordInteraction(playerRef, store, npcId, npcName)
         if (isFirstTime) {
-            val coins = if (vaultNpcComponent.firstTimeCoins > 0) vaultNpcComponent.firstTimeCoins else 10
+            val coins = if (vaultNpcComponent.firstTimeCoins > 0) vaultNpcComponent.firstTimeCoins else 50
             if (coins > 0) {
                 EconomyAPI.deposit(targetRef, store, coins)
                 playerRef.sendMessage(Message.raw("You discovered $npcName for the first time! Earned $coins coins."))

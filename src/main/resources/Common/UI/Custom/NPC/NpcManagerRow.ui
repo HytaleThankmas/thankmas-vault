@@ -1,0 +1,60 @@
+$C = "../Common.ui";
+
+Group {
+  Anchor: (Height: 50);
+  Padding: (Vertical: 3);
+
+  Group #RowBackground {
+    Anchor: (Full: 0);
+    Background: #14202c;
+    Padding: (Horizontal: 10, Vertical: 4);
+    LayoutMode: Left;
+
+    Group #NameCol {
+      Anchor: (Width: 230);
+      LayoutMode: Top;
+
+      Label #NpcName {
+        Anchor: (Height: 20);
+        Style: (FontSize: 14, TextColor: #ffffff, RenderBold: true, VerticalAlignment: Center);
+        Text: "NPC Name";
+      }
+
+      Label #NpcId {
+        Anchor: (Height: 16);
+        Style: (FontSize: 11, TextColor: #878e9c, VerticalAlignment: Center);
+        Text: "ID: ...";
+      }
+    }
+
+    Label #NpcType {
+      Anchor: (Width: 140);
+      Style: (FontSize: 13, TextColor: #bfcdd5, VerticalAlignment: Center);
+      Text: "Type";
+    }
+
+    Label #NpcDelivery {
+      Anchor: (Width: 120);
+      Style: (FontSize: 12, TextColor: #e8a93b, RenderBold: true, VerticalAlignment: Center);
+      Text: "—";
+    }
+
+    Label #NpcShop {
+      Anchor: (Width: 120);
+      Style: (FontSize: 12, TextColor: #7a9cc6, RenderBold: true, VerticalAlignment: Center);
+      Text: "—";
+    }
+
+    Label #NpcCoords {
+      Anchor: (Width: 150);
+      Style: (FontSize: 12, TextColor: #96a9be, VerticalAlignment: Center);
+      Text: "X, Y, Z";
+    }
+
+    $C.@SmallSecondaryTextButton #TpButton {
+      Anchor: (Width: 60, Height: 26);
+      Padding: (Horizontal: 4);
+      Text: "TP";
+    }
+  }
+}
